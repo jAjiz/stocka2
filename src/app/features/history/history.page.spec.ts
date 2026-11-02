@@ -7,11 +7,11 @@ describe('filtros del historial en la URL', () => {
   it('fromQueryParams(toQueryParams(f)) devuelve el mismo f, incluidas las fechas', () => {
     const f: HistoryFilters = {
       kind: 'consume',
-      locationId: 'l1',
-      originId: 'o1',
-      destinationId: 'd1',
-      itemId: 'i1',
-      userId: 'u1',
+      locationId: '00000000-0000-4000-8000-000000000101',
+      originId: '00000000-0000-4000-8000-000000000102',
+      destinationId: '00000000-0000-4000-8000-000000000103',
+      itemId: '00000000-0000-4000-8000-000000000301',
+      userId: 'A0000000-0000-4000-8000-000000000002',
       from: new Date('2026-03-01'),
       to: new Date('2026-03-29'),
       reference: 'OT-1',
@@ -26,6 +26,19 @@ describe('filtros del historial en la URL', () => {
 
   it('ignora valores inválidos', () => {
     expect(fromQueryParams({ kind: 'zzz', from: 'no-fecha', to: '2026-13-45' })).toEqual({});
+  });
+
+  it('ignora ids que no son UUID (p. ej. un enlace truncado) y conserva los válidos', () => {
+    expect(
+      fromQueryParams({
+        locationId: '00000000-0000-4000-8000-0000000001',
+        originId: 'abc',
+        destinationId: '00000000-0000-4000-8000-000000000103x',
+        itemId: '00000000-0000-4000-8000-000000000301',
+        userId: "1' or '1'='1",
+        reference: 'OT-1',
+      }),
+    ).toEqual({ itemId: '00000000-0000-4000-8000-000000000301', reference: 'OT-1' });
   });
 });
 

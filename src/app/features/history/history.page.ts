@@ -38,6 +38,7 @@ const TEXT_KEYS = [
   'userId',
   'reference',
 ] as const;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Los filtros viven en la URL; `to` es el día elegido (inclusivo). */
 export function toQueryParams(f: HistoryFilters): Params {
@@ -59,7 +60,8 @@ export function fromQueryParams(p: Params): HistoryFilters {
   if (kind && (KINDS as string[]).includes(kind)) f.kind = kind as OperationKind;
   for (const k of TEXT_KEYS) {
     const v = str(k);
-    if (v) f[k] = v;
+    // Los filtros por id deben ser UUID: uno truncado haría fallar la RPC (22P02).
+    if (v && (k === 'reference' || UUID_RE.test(v))) f[k] = v;
   }
   const from = parseDay(str('from'));
   if (from) f.from = from;
