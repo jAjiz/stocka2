@@ -55,3 +55,12 @@ export interface OperationLine {
   itemId: string;
   quantity: number;
 }
+
+export interface OperationInput {
+  kind: OperationKind;
+  locationId: string;
+  originId?: string;
+  reference?: string;
+  notes?: string;
+  lines: OperationLineInput[];
+}

@@ -14,6 +14,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -22,9 +23,10 @@ import { MatTableModule } from '@angular/material/table';
 import { AuthService } from '../../core/auth.service';
 import { dbErrorMessage } from '../../core/db-errors';
 import { CatalogService } from '../../data/catalog.service';
-import { Item, ItemType, StockRow } from '../../data/models';
+import { Item, ItemType, OperationKind, StockRow } from '../../data/models';
 import { StockService } from '../../data/stock.service';
 import { normalizeText } from '../../shared/format';
+import { OperationFormComponent } from './operation-form.component';
 
 interface Line {
   itemId: string;
@@ -100,10 +102,12 @@ interface Line {
     } @else {
       <h1>{{ locationName() }}</h1>
       <div class="actions">
-        <button mat-flat-button type="button">Añadir</button>
-        <button mat-stroked-button type="button">Traer aquí</button>
-        <button mat-stroked-button type="button">Baja</button>
-        <button mat-stroked-button type="button">Salida por trabajo</button>
+        <button mat-flat-button type="button" (click)="openForm('add')">Añadir</button>
+        <button mat-stroked-button type="button" (click)="openForm('move')">Traer aquí</button>
+        <button mat-stroked-button type="button" (click)="openForm('remove')">Baja</button>
+        <button mat-stroked-button type="button" (click)="openForm('consume')">
+          Salida por trabajo
+        </button>
       </div>
 
       @if (error()) {
@@ -180,6 +184,7 @@ export class LocationPage {
   private readonly catalog = inject(CatalogService);
   private readonly stockService = inject(StockService);
   private readonly pending = inject(PendingTasks);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly columns = ['name', 'reference', 'typeName', 'quantity'];
 
@@ -252,6 +257,22 @@ export class LocationPage {
       const id = this.locationId();
       untracked(() => void this.pending.run(() => this.load(id)));
     });
+  }
+
+  protected openForm(kind: OperationKind): void {
+    const handset = this.isHandset();
+    this.dialog
+      .open(OperationFormComponent, {
+        data: { kind, locationId: this.locationId() },
+        disableClose: true,
+        ...(handset
+          ? { width: '100vw', maxWidth: '100vw', height: '100vh', maxHeight: '100vh' }
+          : { width: '560px', maxWidth: '95vw' }),
+      })
+      .afterClosed()
+      .subscribe((done) => {
+        if (done) void this.pending.run(() => this.load(this.locationId()));
+      });
   }
 
   private requestSeq = 0;
