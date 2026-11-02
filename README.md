@@ -66,8 +66,8 @@ update public.profiles set role = 'admin', active = true where id = '<uuid>';
 funciones `perform_operation`, `create_item` y `search_operations`, shell responsive
 (barra inferior en móvil, menú lateral en escritorio), inicio con las localizaciones accesibles,
 página de localización con sus operaciones (añadir, traer aquí, baja, salida por trabajo),
-stock global e historial con filtros y detalle de operación. Verificado: 97 pruebas pgTAP,
-47 pruebas Vitest, `ng build` sin avisos y recorrido manual a 375 px y 1280 px.
+stock global e historial con filtros y detalle de operación. Verificado: 123 pruebas pgTAP,
+64 pruebas Vitest, `ng build` sin avisos y recorrido manual a 375 px y 1280 px.
 
 Pendiente:
 
