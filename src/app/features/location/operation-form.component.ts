@@ -110,6 +110,7 @@ export interface OperationFormData {
           />
           <mat-autocomplete
             #auto="matAutocomplete"
+            [displayWith]="noDisplay"
             (optionSelected)="pickItem($event.option.value); search.set('')"
           >
             @for (c of candidates(); track c.id) {
@@ -339,6 +340,9 @@ export class OperationFormComponent implements OnInit {
     this.error.set('');
     void this.loadSource(id);
   }
+
+  /** Evita que el autocompletado escriba el id del artículo en el campo. */
+  protected readonly noDisplay = () => '';
 
   protected pickItem(itemId: string): void {
     this.lines.update((ls) => addLine(ls, itemId));

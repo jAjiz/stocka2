@@ -136,6 +136,10 @@ interface Line {
         </mat-form-field>
       </div>
 
+      @if (!loaded()) {
+        <p class="loading" role="status">Cargando…</p>
+      }
+
       @if (filtered().length === 0 && loaded() && !error()) {
         <p>No hay artículos que mostrar.</p>
       }
@@ -260,31 +264,35 @@ export class LocationPage {
   }
 
   protected openForm(kind: OperationKind): void {
+    if (this.dialog.openDialogs.length > 0) return;
     const handset = this.isHandset();
     this.dialog
       .open(OperationFormComponent, {
         data: { kind, locationId: this.locationId() },
         disableClose: true,
         ...(handset
-          ? { width: '100vw', maxWidth: '100vw', height: '100vh', maxHeight: '100vh' }
+          ? { width: '100vw', maxWidth: '100vw', height: '100dvh', maxHeight: '100dvh' }
           : { width: '560px', maxWidth: '95vw' }),
       })
       .afterClosed()
       .subscribe((done) => {
-        if (done) void this.pending.run(() => this.load(this.locationId()));
+        if (done) void this.pending.run(() => this.load(this.locationId(), true));
       });
   }
 
   private requestSeq = 0;
 
-  private async load(id: string): Promise<void> {
+  /** `refresh`: recarga la misma localización conservando las filas actuales hasta tener las nuevas. */
+  private async load(id: string, refresh = false): Promise<void> {
     const seq = ++this.requestSeq;
     const stale = () => seq !== this.requestSeq;
     this.loaded.set(false);
     this.error.set('');
-    this.locationName.set('');
-    this.items.set([]);
-    this.stock.set([]);
+    if (!refresh) {
+      this.locationName.set('');
+      this.items.set([]);
+      this.stock.set([]);
+    }
     if (!this.auth.canOperate(id)) {
       this.loaded.set(true);
       return;

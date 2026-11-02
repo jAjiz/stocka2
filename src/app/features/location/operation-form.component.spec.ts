@@ -8,7 +8,7 @@ import { OperationsService } from '../../data/operations.service';
 import { StockService } from '../../data/stock.service';
 import { OperationFormComponent } from './operation-form.component';
 
-async function setup() {
+async function setup(preselect = true) {
   let resolve!: (v: string) => void;
   let reject!: (e: unknown) => void;
   const perform = vi.fn(
@@ -50,7 +50,7 @@ async function setup() {
   const cmp = fixture.componentInstance as unknown as {
     pickItem(id: string): void;
   };
-  cmp.pickItem('a');
+  if (preselect) cmp.pickItem('a');
   fixture.detectChanges();
   const button = () =>
     fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
@@ -84,6 +84,23 @@ describe('OperationFormComponent', () => {
     s.fixture.detectChanges();
     expect(s.close).not.toHaveBeenCalled();
     expect(s.fixture.nativeElement.textContent).toContain('No hay stock suficiente de');
+    expect(s.fixture.nativeElement.textContent).toContain('Bujía');
     expect(s.button().disabled).toBe(false);
+  });
+
+  it('al elegir una opción el campo queda vacío y se añade la línea', async () => {
+    const s = await setup(false);
+    const input = s.fixture.nativeElement.querySelector('input[type="search"]') as HTMLInputElement;
+    input.focus();
+    input.click();
+    s.fixture.detectChanges();
+    await s.fixture.whenStable();
+    const option = document.querySelector('mat-option') as HTMLElement;
+    option.click();
+    s.fixture.detectChanges();
+    await s.fixture.whenStable();
+    s.fixture.detectChanges();
+    expect(input.value).toBe('');
+    expect(s.fixture.nativeElement.querySelectorAll('.line')).toHaveLength(1);
   });
 });
