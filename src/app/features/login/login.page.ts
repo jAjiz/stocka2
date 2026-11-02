@@ -34,6 +34,12 @@ import { AuthService } from '../../core/auth.service';
       color: var(--mat-sys-error);
       margin: 0;
     }
+    .forgot {
+      margin: 0;
+      padding: 0 16px 16px;
+      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-body-small);
+    }
   `,
   template: `
     <mat-card appearance="outlined">
@@ -66,6 +72,7 @@ import { AuthService } from '../../core/auth.service';
         }
         <button mat-flat-button type="submit" [disabled]="busy()">Entrar</button>
       </form>
+      <p class="forgot">¿Has olvidado tu contraseña? Pide un enlace de acceso al administrador.</p>
     </mat-card>
   `,
 })
