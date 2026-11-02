@@ -31,8 +31,7 @@ export class AuthService {
     void this.supabase.auth
       .getSession()
       .then(async ({ data }) => {
-        this.session.set(data.session);
-        if (data.session) await this.loadUserData(data.session.user.id);
+        if (data.session) await this.establish(data.session);
       })
       .catch(() => undefined)
       .finally(resolveReady);
@@ -47,22 +46,46 @@ export class AuthService {
     if (error || !data.session) {
       throw new Error('Correo o contraseña incorrectos.');
     }
-    await this.loadUserData(data.session.user.id);
-    const profile = this.profile();
-    if (!profile || !profile.active) {
-      await this.signOut();
-      throw new Error('Tu usuario está desactivado. Habla con el administrador.');
-    }
+    await this.establish(data.session);
   }
 
   async signOut(): Promise<void> {
-    await this.supabase.auth.signOut();
+    try {
+      await this.supabase.auth.signOut();
+    } catch {
+      // el estado local se limpia igualmente
+    }
+    this.clear();
+  }
+
+  private clear(): void {
     this.session.set(null);
     this.profile.set(null);
     this.permittedLocationIds.set(new Set());
   }
 
-  private async loadUserData(userId: string): Promise<void> {
+  /** Carga perfil y permisos; si falla o el usuario está inactivo, cierra la sesión y lanza. */
+  private async establish(session: Session): Promise<void> {
+    const userId = session.user.id;
+    let loaded: { profile: Profile | null; permitted: Set<string> };
+    try {
+      loaded = await this.loadUserData(userId);
+    } catch {
+      await this.signOut();
+      throw new Error('Ha ocurrido un error inesperado. Inténtalo de nuevo.');
+    }
+    if (!loaded.profile || !loaded.profile.active) {
+      await this.signOut();
+      throw new Error('Tu usuario está desactivado. Habla con el administrador.');
+    }
+    this.profile.set(loaded.profile);
+    this.permittedLocationIds.set(loaded.permitted);
+    this.session.set(session);
+  }
+
+  private async loadUserData(
+    userId: string,
+  ): Promise<{ profile: Profile | null; permitted: Set<string> }> {
     const [profileRes, permsRes] = await Promise.all([
       this.supabase
         .from('profiles')
@@ -71,12 +94,13 @@ export class AuthService {
         .maybeSingle(),
       this.supabase.from('location_permissions').select('location_id').eq('user_id', userId),
     ]);
+    if (profileRes.error || permsRes.error) {
+      throw new Error('load_failed');
+    }
     const p = profileRes.data;
-    this.profile.set(
-      p ? { id: p.id, displayName: p.display_name, role: p.role, active: p.active } : null,
-    );
-    this.permittedLocationIds.set(
-      new Set((permsRes.data ?? []).map((r: { location_id: string }) => r.location_id)),
-    );
+    return {
+      profile: p ? { id: p.id, displayName: p.display_name, role: p.role, active: p.active } : null,
+      permitted: new Set((permsRes.data ?? []).map((r: { location_id: string }) => r.location_id)),
+    };
   }
 }
