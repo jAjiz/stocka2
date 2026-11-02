@@ -1,5 +1,5 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { map } from 'rxjs';
@@ -79,9 +79,28 @@ import { AuthService } from '../core/auth.service';
     main.desktop {
       padding: 24px;
     }
+    .load-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      height: 100%;
+      padding: 16px;
+      box-sizing: border-box;
+      text-align: center;
+    }
   `,
   template: `
-    @if (isHandset()) {
+    @if (auth.loadError()) {
+      <div class="load-error">
+        <p role="alert">No se ha podido conectar.</p>
+        <button mat-flat-button type="button" [disabled]="retrying()" (click)="retry()">
+          Reintentar
+        </button>
+        <button mat-button type="button" (click)="signOut()">Cerrar sesión</button>
+      </div>
+    } @else if (isHandset()) {
       <div class="layout-mobile">
         <mat-toolbar color="primary">
           <span>Stocka2</span>
@@ -150,8 +169,27 @@ export class ShellComponent {
     { initialValue: false },
   );
 
+  protected readonly retrying = signal(false);
+
+  constructor() {
+    // Si la sesión desaparece (cierre de sesión, token caducado, cierre en otra pestaña),
+    // se vuelve al login.
+    effect(() => {
+      if (!this.auth.session()) void this.router.navigateByUrl('/login');
+    });
+  }
+
+  protected async retry(): Promise<void> {
+    this.retrying.set(true);
+    try {
+      await this.auth.retry();
+    } finally {
+      this.retrying.set(false);
+    }
+  }
+
+  /** La navegación a /login la hace el effect al quedar la sesión en null. */
   protected async signOut(): Promise<void> {
     await this.auth.signOut();
-    await this.router.navigateByUrl('/login');
   }
 }
