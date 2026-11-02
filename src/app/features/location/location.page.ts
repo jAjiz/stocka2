@@ -108,6 +108,9 @@ interface Line {
         <button mat-stroked-button type="button" (click)="openForm('consume')">
           Salida por trabajo
         </button>
+        <a mat-stroked-button routerLink="/historial" [queryParams]="{ locationId: locationId() }">
+          Ver historial
+        </a>
       </div>
 
       @if (error()) {

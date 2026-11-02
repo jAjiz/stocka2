@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { SUPABASE } from '../core/supabase';
-import { Item, ItemType, Location } from './models';
+import { Item, ItemType, Location, Profile } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class CatalogService {
@@ -14,6 +14,30 @@ export class CatalogService {
       .order('name');
     if (error) throw error;
     return (data ?? []).map((r) => ({ id: r.id, name: r.name, kind: r.kind, active: r.active }));
+  }
+
+  /** Todas las localizaciones, incluidas las deshabilitadas (para mostrar nombres en el historial). */
+  async allLocations(): Promise<Location[]> {
+    const { data, error } = await this.supabase
+      .from('locations')
+      .select('id, name, kind, active')
+      .order('name');
+    if (error) throw error;
+    return (data ?? []).map((r) => ({ id: r.id, name: r.name, kind: r.kind, active: r.active }));
+  }
+
+  async profiles(): Promise<Profile[]> {
+    const { data, error } = await this.supabase
+      .from('profiles')
+      .select('id, display_name, role, active')
+      .order('display_name');
+    if (error) throw error;
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      displayName: r.display_name,
+      role: r.role,
+      active: r.active,
+    }));
   }
 
   async itemTypes(): Promise<ItemType[]> {
