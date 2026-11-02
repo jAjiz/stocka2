@@ -328,9 +328,10 @@ export class OperationFormComponent implements OnInit {
     }
   }
 
-  private async loadSource(locationId: string): Promise<void> {
+  /** `refresh`: conserva el stock actual hasta tener el nuevo (evita marcar todas las líneas). */
+  private async loadSource(locationId: string, refresh = false): Promise<void> {
     const seq = ++this.sourceSeq;
-    this.sourceStock.set(new Map());
+    if (!refresh) this.sourceStock.set(new Map());
     try {
       const rows = await this.stockService.byLocation(locationId);
       if (seq !== this.sourceSeq) return;
@@ -409,6 +410,12 @@ export class OperationFormComponent implements OnInit {
     } catch (e) {
       this.error.set(dbErrorMessage(e, this.itemNames()));
       this.busy.set(false);
+      // El stock cambió desde que se abrió el diálogo: se recarga para que la validación
+      // local use la disponibilidad real.
+      const source = this.data.kind === 'move' ? this.originId() : this.data.locationId;
+      if ((e as { message?: string } | null)?.message === 'insufficient_stock' && source) {
+        void this.pending.run(() => this.loadSource(source, true));
+      }
     }
   }
 }

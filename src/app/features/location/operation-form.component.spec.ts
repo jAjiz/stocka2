@@ -18,6 +18,7 @@ async function setup(preselect = true) {
         reject = rej;
       }),
   );
+  const byLocation = vi.fn(async () => [{ itemId: 'a', locationId: 'l1', quantity: 5 }]);
   const close = vi.fn();
   const open = vi.fn();
   TestBed.configureTestingModule({
@@ -39,7 +40,7 @@ async function setup(preselect = true) {
       },
       {
         provide: StockService,
-        useValue: { byLocation: async () => [{ itemId: 'a', locationId: 'l1', quantity: 5 }] },
+        useValue: { byLocation },
       },
     ],
   });
@@ -54,7 +55,7 @@ async function setup(preselect = true) {
   fixture.detectChanges();
   const button = () =>
     fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
-  return { fixture, perform, close, open, button, resolve: (v: string) => resolve(v), reject: (e: unknown) => reject(e) };
+  return { fixture, perform, close, open, button, byLocation, resolve: (v: string) => resolve(v), reject: (e: unknown) => reject(e) };
 }
 
 describe('OperationFormComponent', () => {
@@ -86,6 +87,23 @@ describe('OperationFormComponent', () => {
     expect(s.fixture.nativeElement.textContent).toContain('No hay stock suficiente de');
     expect(s.fixture.nativeElement.textContent).toContain('Bujía');
     expect(s.button().disabled).toBe(false);
+  });
+
+  it('tras insufficient_stock recarga el stock de origen y valida con él', async () => {
+    const s = await setup();
+    expect(s.byLocation).toHaveBeenCalledTimes(1);
+    s.byLocation.mockResolvedValueOnce([{ itemId: 'a', locationId: 'l1', quantity: 0 }]);
+    s.button().click();
+    s.reject({
+      message: 'insufficient_stock',
+      details: '[{"item_id":"a","available":0,"requested":1}]',
+    });
+    await s.fixture.whenStable();
+    s.fixture.detectChanges();
+    expect(s.byLocation).toHaveBeenCalledTimes(2);
+    expect(s.byLocation).toHaveBeenLastCalledWith('l1');
+    // Con el stock fresco (0) la validación local bloquea Confirmar.
+    expect(s.button().disabled).toBe(true);
   });
 
   it('reintentar tras un fallo reenvía el mismo id de operación', async () => {
