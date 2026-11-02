@@ -99,6 +99,10 @@ interface Line {
       <h1>Localización</h1>
       <p>No tienes acceso a esta localización</p>
       <a mat-button routerLink="/">Volver a Inicio</a>
+    } @else if (notFound()) {
+      <h1>Localización no encontrada</h1>
+      <p>La localización no existe o está deshabilitada.</p>
+      <a mat-button routerLink="/">Volver a Inicio</a>
     } @else {
       <h1>{{ locationName() }}</h1>
       <div class="actions">
@@ -208,6 +212,8 @@ export class LocationPage {
 
   protected readonly allowed = computed(() => this.auth.canOperate(this.locationId()));
   protected readonly locationName = signal('');
+  /** El id no está entre las localizaciones activas (p. ej. un admin con un enlace antiguo). */
+  protected readonly notFound = signal(false);
   protected readonly types = signal<ItemType[]>([]);
   protected readonly error = signal('');
   protected readonly loaded = signal(false);
@@ -273,6 +279,9 @@ export class LocationPage {
       .open(OperationFormComponent, {
         data: { kind, locationId: this.locationId() },
         disableClose: true,
+        // Enfocar el título y no el buscador: así el autocompletado no se abre durante la
+        // animación de apertura (en móvil aparecía descolocado sobre los campos).
+        autoFocus: 'first-heading',
         ...(handset
           ? { width: '100vw', maxWidth: '100vw', height: '100dvh', maxHeight: '100dvh' }
           : { width: '560px', maxWidth: '95vw' }),
@@ -292,6 +301,7 @@ export class LocationPage {
     this.loaded.set(false);
     this.error.set('');
     if (!refresh) {
+      this.notFound.set(false);
       this.locationName.set('');
       this.items.set([]);
       this.stock.set([]);
@@ -308,7 +318,9 @@ export class LocationPage {
         this.stockService.byLocation(id),
       ]);
       if (stale()) return;
-      this.locationName.set(locations.find((l) => l.id === id)?.name ?? 'Localización');
+      const location = locations.find((l) => l.id === id);
+      this.notFound.set(!location);
+      this.locationName.set(location?.name ?? 'Localización');
       this.types.set(types);
       this.items.set(items);
       this.stock.set(stock);

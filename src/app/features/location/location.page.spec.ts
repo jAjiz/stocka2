@@ -2,12 +2,13 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { BehaviorSubject, of } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../core/auth.service';
 import { CatalogService } from '../../data/catalog.service';
 import { StockService } from '../../data/stock.service';
 import { LocationPage } from './location.page';
 
-async function setup(canOperate: boolean) {
+async function setup(canOperate: boolean, id = 'l1') {
   const auth = { canOperate: () => canOperate, isAdmin: signal(false), ready: Promise.resolve() };
   const catalog = {
     locations: async () => [{ id: 'l1', name: 'Taller', kind: 'warehouse', active: true }],
@@ -31,7 +32,7 @@ async function setup(canOperate: boolean) {
       { provide: AuthService, useValue: auth },
       { provide: CatalogService, useValue: catalog },
       { provide: StockService, useValue: stock },
-      { provide: ActivatedRoute, useValue: { paramMap: of(new Map([['id', 'l1']])) } },
+      { provide: ActivatedRoute, useValue: { paramMap: of(new Map([['id', id]])) } },
     ],
   });
   const fixture = TestBed.createComponent(LocationPage);
@@ -56,6 +57,32 @@ describe('LocationPage', () => {
     for (const label of ['Añadir', 'Traer aquí', 'Baja', 'Salida por trabajo']) {
       expect(text).toContain(label);
     }
+  });
+
+  it('una localización inexistente o deshabilitada muestra "no encontrada" sin acciones', async () => {
+    const f = await setup(true, 'no-existe');
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('h1')?.textContent).toContain('Localización no encontrada');
+    expect(el.querySelector('a[href="/"]')?.textContent).toContain('Volver a Inicio');
+    const buttons = [...el.querySelectorAll('button, a')].map((b) => b.textContent?.trim());
+    for (const label of ['Añadir', 'Traer aquí', 'Baja', 'Salida por trabajo', 'Ver historial']) {
+      expect(buttons).not.toContain(label);
+    }
+  });
+
+  it('abre el formulario enfocando el título, no el buscador', async () => {
+    const f = await setup(true);
+    const open = vi
+      .spyOn(TestBed.inject(MatDialog), 'open')
+      .mockReturnValue({ afterClosed: () => of(false) } as never);
+    const add = [...(f.nativeElement as HTMLElement).querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Añadir',
+    ) as HTMLButtonElement;
+    add.click();
+    expect(open).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ autoFocus: 'first-heading' }),
+    );
   });
 
   it('el buscador filtra sin distinguir acentos', async () => {
