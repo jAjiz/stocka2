@@ -44,3 +44,18 @@ El seed no se aplica en producción. Crea el usuario desde el panel de Supabase
 ```sql
 update public.profiles set role = 'admin' where id = '<uuid>';
 ```
+
+## Estado
+
+**Plan 1 completado** (base): autenticación (login y cierre de sesión), esquema con RLS y
+funciones `perform_operation`, `create_item` y `search_operations`, shell responsive
+(barra inferior en móvil, menú lateral en escritorio), inicio con las localizaciones accesibles,
+página de localización con sus operaciones (añadir, traer aquí, baja, salida por trabajo),
+stock global e historial con filtros y detalle de operación. Verificado: 97 pruebas pgTAP,
+47 pruebas Vitest, `ng build` sin avisos y recorrido manual a 375 px y 1280 px.
+
+Pendiente:
+
+- **Plan 2 — administración:** usuarios y enlaces de acceso, localizaciones, artículos y tipos.
+- **Plan 3 — avisos y notificaciones push** con PWA.
+- **Plan 4 — importación CSV/Excel y despliegue** en Cloudflare.
