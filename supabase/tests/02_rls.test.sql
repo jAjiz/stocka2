@@ -1,5 +1,6 @@
 begin;
 \ir _helpers.sql
+select tests.clear_seed();
 select plan(11);
 
 select tests.create_user('u1@stocka2.test') as u1 \gset

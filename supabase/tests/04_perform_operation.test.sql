@@ -1,5 +1,6 @@
 begin;
 \ir _helpers.sql
+select tests.clear_seed();
 select plan(42);
 
 -- Datos: Taller (T), Furgoneta 1 (F1), Furgoneta 2 (F2); artículos A y B

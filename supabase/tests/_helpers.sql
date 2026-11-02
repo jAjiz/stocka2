@@ -30,3 +30,15 @@ begin
   perform set_config('request.jwt.claims', '', true);
   reset role;
 end $$;
+
+-- Vacía los datos de desarrollo (seed.sql) para que los tests partan de una BD limpia.
+-- Solo tiene efecto dentro de la transacción del test (se revierte con rollback).
+create or replace function tests.clear_seed()
+returns void language plpgsql as $$
+begin
+  truncate public.operation_lines, public.operations, public.stock,
+           public.location_permissions, public.items, public.item_types, public.locations;
+  delete from public.profiles;
+  delete from auth.identities;
+  delete from auth.users;
+end $$;
