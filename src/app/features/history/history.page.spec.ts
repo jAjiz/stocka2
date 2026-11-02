@@ -87,3 +87,73 @@ describe('OperationsService.search', () => {
     expect(await empty.service.search({}, 5)).toEqual({ rows: [], total: 0 });
   });
 });
+
+describe('HistoryPage con artículos deshabilitados', () => {
+  async function setup() {
+    const { provideRouter } = await import('@angular/router');
+    const { CatalogService } = await import('../../data/catalog.service');
+    const { HistoryPage } = await import('./history.page');
+    const catalog = {
+      allLocations: async () => [{ id: 'l1', name: 'Taller', kind: 'warehouse', active: false }],
+      profiles: async () => [{ id: 'u1', displayName: 'Ana', role: 'user', active: false }],
+      allItems: async () => [
+        { id: 'i1', name: 'Pieza antigua', typeId: 't', reference: null, active: false },
+      ],
+    };
+    const ops = {
+      search: async () => ({
+        rows: [
+          {
+            id: 'op1',
+            kind: 'add',
+            originId: null,
+            destinationId: 'l1',
+            reference: null,
+            notes: null,
+            userId: 'u1',
+            createdAt: new Date('2026-03-01T10:00:00Z'),
+            lineCount: 1,
+          },
+        ],
+        total: 1,
+      }),
+      lines: async () => [{ itemId: 'i1', quantity: 3 }],
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: CatalogService, useValue: catalog },
+        { provide: OperationsService, useValue: ops },
+      ],
+    });
+    const fixture = TestBed.createComponent(HistoryPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('el detalle muestra el nombre de un artículo deshabilitado', async () => {
+    const f = await setup();
+    (f.nativeElement.querySelector('tr.mat-mdc-row') as HTMLElement).click();
+    await f.whenStable();
+    f.detectChanges();
+    await f.whenStable();
+    const text = document.querySelector('mat-dialog-container')?.textContent ?? '';
+    expect(text).toContain('Pieza antigua');
+    expect(text).not.toContain('Artículo deshabilitado');
+    expect(text).toContain('Taller');
+    expect(text).toContain('Ana');
+  });
+
+  it('el artículo deshabilitado se puede elegir en el filtro', async () => {
+    const f = await setup();
+    const selects = f.nativeElement.querySelectorAll('mat-select') as NodeListOf<HTMLElement>;
+    const itemSelect = selects[4]; // Tipo, Localización, Origen, Destino, Artículo
+    itemSelect.querySelector<HTMLElement>('.mat-mdc-select-trigger')!.click();
+    f.detectChanges();
+    await f.whenStable();
+    const options = Array.from(document.querySelectorAll('mat-option')).map((o) => o.textContent);
+    expect(options.some((t) => t?.includes('Pieza antigua'))).toBe(true);
+  });
+});

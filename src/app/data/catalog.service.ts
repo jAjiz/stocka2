@@ -66,6 +66,22 @@ export class CatalogService {
     }));
   }
 
+  /** Todos los artículos, incluidos los deshabilitados (para mostrar nombres en el historial). */
+  async allItems(): Promise<Item[]> {
+    const { data, error } = await this.supabase
+      .from('items')
+      .select('id, name, type_id, reference, active')
+      .order('name');
+    if (error) throw error;
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      typeId: r.type_id,
+      reference: r.reference,
+      active: r.active,
+    }));
+  }
+
   async createItem(name: string, typeId: string, reference: string | null): Promise<string> {
     const { data, error } = await this.supabase.rpc('create_item', {
       p_name: name,

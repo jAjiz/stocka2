@@ -242,6 +242,9 @@ export function fromQueryParams(p: Params): HistoryFilters {
       <ng-container [ngTemplateOutlet]="filtersForm" />
     }
 
+    @if (catalogError()) {
+      <p class="error" role="alert">{{ catalogError() }}</p>
+    }
     @if (error()) {
       <p class="error" role="alert">{{ error() }}</p>
     }
@@ -350,6 +353,7 @@ export class HistoryPage {
   protected readonly total = signal(0);
   protected readonly loaded = signal(false);
   protected readonly error = signal('');
+  protected readonly catalogError = signal('');
 
   protected readonly locations = signal<Location[]>([]);
   protected readonly profiles = signal<Profile[]>([]);
@@ -427,13 +431,13 @@ export class HistoryPage {
       const [locations, profiles, items] = await Promise.all([
         this.catalog.allLocations(),
         this.catalog.profiles(),
-        this.catalog.items(),
+        this.catalog.allItems(),
       ]);
       this.locations.set(locations);
       this.profiles.set(profiles);
       this.items.set(items);
     } catch (e) {
-      this.error.set(dbErrorMessage(e));
+      this.catalogError.set(dbErrorMessage(e));
     }
   }
 

@@ -86,7 +86,8 @@ export class OperationsService {
     const { data, error } = await this.supabase
       .from('operation_lines')
       .select('item_id, quantity')
-      .eq('operation_id', operationId);
+      .eq('operation_id', operationId)
+      .order('item_id');
     if (error) throw error;
     return (data ?? []).map((r) => ({ itemId: r.item_id, quantity: r.quantity }));
   }
