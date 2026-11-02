@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { AuthApiError, AuthRetryableFetchError } from '@supabase/supabase-js';
 import { AuthService } from './auth.service';
 import { SUPABASE } from './supabase';
 
@@ -7,11 +8,14 @@ interface FakeOpts {
   profile?: { id: string; display_name: string; role: string; active: boolean } | null;
   profileError?: boolean;
   permissions?: string[];
+  signInError?: unknown;
+  signInThrows?: unknown;
 }
 
 function setup(opts: FakeOpts = {}) {
   const session = { user: { id: 'u1' } };
-  const profile =
+  // Se leen de opts en cada llamada para que los tests puedan cambiarlos antes de retry().
+  const profile = () =>
     opts.profile === undefined
       ? { id: 'u1', display_name: 'Furgo 1', role: 'user', active: true }
       : opts.profile;
@@ -20,7 +24,13 @@ function setup(opts: FakeOpts = {}) {
     auth: {
       onAuthStateChange: vi.fn(),
       getSession: vi.fn().mockResolvedValue({ data: { session: opts.restored ? session : null } }),
-      signInWithPassword: vi.fn().mockResolvedValue({ data: { session }, error: null }),
+      signInWithPassword: opts.signInThrows
+        ? vi.fn().mockRejectedValue(opts.signInThrows)
+        : vi.fn().mockResolvedValue(
+            opts.signInError
+              ? { data: { session: null }, error: opts.signInError }
+              : { data: { session }, error: null },
+          ),
       signOut,
     },
     from: (table: string) => ({
@@ -32,7 +42,7 @@ function setup(opts: FakeOpts = {}) {
                   Promise.resolve(
                     opts.profileError
                       ? { data: null, error: { message: 'network' } }
-                      : { data: profile, error: null },
+                      : { data: profile(), error: null },
                   ),
               }
             : Promise.resolve({
@@ -43,7 +53,7 @@ function setup(opts: FakeOpts = {}) {
     }),
   };
   TestBed.configureTestingModule({ providers: [{ provide: SUPABASE, useValue: fake }] });
-  return { auth: TestBed.inject(AuthService), signOut };
+  return { auth: TestBed.inject(AuthService), signOut, opts };
 }
 
 const INACTIVE = 'Tu usuario está desactivado. Habla con el administrador.';
@@ -90,11 +100,71 @@ describe('AuthService', () => {
     expect(auth.session()).toBeNull();
   });
 
-  it('un fallo al cargar el perfil al restaurar no entra al shell', async () => {
-    const { auth } = setup({ restored: true, profileError: true });
+  it('un fallo al cargar el perfil al restaurar conserva la sesión y marca loadError', async () => {
+    const { auth, signOut } = setup({ restored: true, profileError: true });
     await auth.ready;
-    expect(auth.session()).toBeNull();
+    expect(signOut).not.toHaveBeenCalled();
+    expect(auth.session()).not.toBeNull();
     expect(auth.profile()).toBeNull();
+    expect(auth.loadError()).toBe(true);
+  });
+
+  it('retry tras un fallo de carga entra cuando la red vuelve', async () => {
+    const { auth, opts } = setup({ restored: true, profileError: true, permissions: ['l1'] });
+    await auth.ready;
+    opts.profileError = false;
+    await auth.retry();
+    expect(auth.loadError()).toBe(false);
+    expect(auth.profile()?.displayName).toBe('Furgo 1');
+    expect(auth.canOperate('l1')).toBe(true);
+  });
+
+  it('retry que vuelve a fallar sigue en loadError sin cerrar sesión', async () => {
+    const { auth, signOut } = setup({ restored: true, profileError: true });
+    await auth.ready;
+    await auth.retry();
+    expect(auth.loadError()).toBe(true);
+    expect(auth.session()).not.toBeNull();
+    expect(signOut).not.toHaveBeenCalled();
+  });
+
+  it('retry con el usuario ya desactivado cierra sesión', async () => {
+    const { auth, opts, signOut } = setup({ restored: true, profileError: true });
+    await auth.ready;
+    opts.profileError = false;
+    opts.profile = inactiveProfile;
+    await auth.retry();
+    expect(signOut).toHaveBeenCalled();
+    expect(auth.session()).toBeNull();
+    expect(auth.loadError()).toBe(false);
+  });
+
+  it('restaurar sesión sin perfil cierra sesión', async () => {
+    const { auth, signOut } = setup({ restored: true, profile: null });
+    await auth.ready;
+    expect(signOut).toHaveBeenCalled();
+    expect(auth.session()).toBeNull();
+    expect(auth.loadError()).toBe(false);
+  });
+
+  it('signIn: credenciales incorrectas', async () => {
+    const { auth } = setup({
+      signInError: new AuthApiError('Invalid login credentials', 400, 'invalid_credentials'),
+    });
+    await auth.ready;
+    await expect(auth.signIn('a@b.c', 'x')).rejects.toThrow('Correo o contraseña incorrectos.');
+  });
+
+  it('signIn: error de red devuelto por supabase-js', async () => {
+    const { auth } = setup({ signInError: new AuthRetryableFetchError('Failed to fetch', 0) });
+    await auth.ready;
+    await expect(auth.signIn('a@b.c', 'x')).rejects.toThrow('Sin conexión. Inténtalo de nuevo.');
+  });
+
+  it('signIn: fetch que lanza TypeError', async () => {
+    const { auth } = setup({ signInThrows: new TypeError('Failed to fetch') });
+    await auth.ready;
+    await expect(auth.signIn('a@b.c', 'x')).rejects.toThrow('Sin conexión. Inténtalo de nuevo.');
   });
 
   it('canOperate: admin siempre, usuario solo sus localizaciones', async () => {
