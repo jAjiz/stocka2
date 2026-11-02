@@ -36,13 +36,28 @@ Furgoneta 2), 3 tipos, 8 artículos con stock inicial en Taller (mediante operac
 Las pruebas de BD (`npm run db:test`) vacían estos datos dentro de su transacción
 (`tests.clear_seed()`), así que no los alteran.
 
-## Primer administrador en producción
+## Producción
+
+### Desactivar el registro abierto
+
+`enable_signup = false` en `supabase/config.toml` solo afecta a Supabase local. En el
+proyecto hosted el registro está abierto por defecto y la anon key es pública, así que
+cualquiera podría crear una cuenta con `POST /auth/v1/signup`. Antes de publicar:
+
+- **Authentication → Sign In / Providers → desactivar "Allow new users to sign up".**
+
+Como defensa en profundidad, el trigger `on_auth_user_created` crea el perfil **inactivo**
+salvo que el usuario lleve `stocka2_invited = true` en `raw_app_meta_data` (solo lo puede
+escribir `service_role`). Un usuario con el perfil inactivo no puede entrar ni operar.
+
+### Primer administrador
 
 El seed no se aplica en producción. Crea el usuario desde el panel de Supabase
-(Authentication > Users) y conviértelo en administrador:
+(Authentication > Users); su perfil nace inactivo, así que actívalo y conviértelo en
+administrador en la misma sentencia:
 
 ```sql
-update public.profiles set role = 'admin' where id = '<uuid>';
+update public.profiles set role = 'admin', active = true where id = '<uuid>';
 ```
 
 ## Estado

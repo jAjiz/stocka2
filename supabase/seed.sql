@@ -1,7 +1,8 @@
 -- Datos de desarrollo. Contraseña de todos los usuarios: stocka2-dev (solo desarrollo).
 -- UUIDs fijos para que el seed sea determinista.
 
--- Usuarios (el trigger on_auth_user_created crea los perfiles)
+-- Usuarios (el trigger on_auth_user_created crea los perfiles; activos por la marca
+-- stocka2_invited de raw_app_meta_data)
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
@@ -9,10 +10,10 @@ insert into auth.users (
 ) values
   ('00000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
    'admin@stocka2.test', crypt('stocka2-dev', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+   '{"provider":"email","providers":["email"],"stocka2_invited":true}', '{}', now(), now(), '', '', '', ''),
   ('00000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
    'furgo1@stocka2.test', crypt('stocka2-dev', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '');
+   '{"provider":"email","providers":["email"],"stocka2_invited":true}', '{}', now(), now(), '', '', '', '');
 
 insert into auth.identities (id, user_id, provider, provider_id, identity_data, last_sign_in_at, created_at, updated_at)
 select gen_random_uuid(), u.id, 'email', u.id::text,

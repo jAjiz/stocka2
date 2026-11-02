@@ -3,13 +3,15 @@ create extension if not exists pgtap with schema extensions;
 create schema if not exists tests;
 grant usage on schema tests to authenticated, anon;
 
+-- Crea un usuario invitado (marca stocka2_invited en app_metadata): su perfil nace activo.
 create or replace function tests.create_user(p_email text, p_role text default 'user')
 returns uuid language plpgsql as $$
 declare v_id uuid := gen_random_uuid();
 begin
-  insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at)
+  insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data,
+                          created_at, updated_at)
   values (v_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-          p_email, '{}'::jsonb, now(), now());
+          p_email, '{"stocka2_invited":true}'::jsonb, '{}'::jsonb, now(), now());
   if p_role <> 'user' then
     update public.profiles set role = p_role where id = v_id;
   end if;
