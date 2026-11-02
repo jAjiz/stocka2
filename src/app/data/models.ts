@@ -63,4 +63,6 @@ export interface OperationInput {
   reference?: string;
   notes?: string;
   lines: OperationLineInput[];
+  /** Id generado por el cliente una vez por operación: hace idempotentes los reintentos. */
+  operationId?: string;
 }

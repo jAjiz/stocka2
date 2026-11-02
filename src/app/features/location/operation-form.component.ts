@@ -300,6 +300,12 @@ export class OperationFormComponent implements OnInit {
 
   private sourceSeq = 0;
 
+  /**
+   * Un id por instancia del diálogo, reenviado en cada intento de Confirmar: si la respuesta
+   * se perdió tras el commit, el reintento no duplica la operación.
+   */
+  private readonly operationId = crypto.randomUUID();
+
   ngOnInit(): void {
     void this.pending.run(() => this.init());
   }
@@ -387,8 +393,8 @@ export class OperationFormComponent implements OnInit {
     this.busy.set(true);
     this.error.set('');
     try {
-      await this.operations.perform(
-        buildPayload({
+      await this.operations.perform({
+        ...buildPayload({
           kind: this.data.kind,
           locationId: this.data.locationId,
           originId: this.originId() || undefined,
@@ -396,7 +402,8 @@ export class OperationFormComponent implements OnInit {
           notes: this.notes(),
           lines: this.lines(),
         }),
-      );
+        operationId: this.operationId,
+      });
       this.snackBar.open('Operación registrada', 'Cerrar', { duration: 4000 });
       this.ref.close(true);
     } catch (e) {

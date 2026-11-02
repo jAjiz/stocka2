@@ -88,6 +88,22 @@ describe('OperationFormComponent', () => {
     expect(s.button().disabled).toBe(false);
   });
 
+  it('reintentar tras un fallo reenvía el mismo id de operación', async () => {
+    const s = await setup();
+    s.button().click();
+    s.reject({ message: 'Failed to fetch' });
+    await s.fixture.whenStable();
+    s.fixture.detectChanges();
+    s.button().click();
+    s.resolve('op1');
+    await s.fixture.whenStable();
+    expect(s.perform).toHaveBeenCalledTimes(2);
+    const calls = s.perform.mock.calls as unknown as [{ operationId: string }][];
+    const first = calls[0][0].operationId;
+    expect(first).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(calls[1][0].operationId).toBe(first);
+  });
+
   it('al elegir una opción el campo queda vacío y se añade la línea', async () => {
     const s = await setup(false);
     const input = s.fixture.nativeElement.querySelector('input[type="search"]') as HTMLInputElement;

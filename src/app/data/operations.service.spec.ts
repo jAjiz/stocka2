@@ -17,6 +17,7 @@ describe('OperationsService', () => {
       originId: 'o1',
       notes: 'n',
       lines: [{ itemId: 'a', quantity: 2 }],
+      operationId: 'id-1',
     });
     expect(id).toBe('op1');
     expect(rpc).toHaveBeenCalledWith('perform_operation', {
@@ -26,15 +27,21 @@ describe('OperationsService', () => {
       p_origin_id: 'o1',
       p_reference: null,
       p_notes: 'n',
+      p_operation_id: 'id-1',
     });
   });
 
-  it('envía null cuando faltan origen, referencia y notas', async () => {
+  it('envía null cuando faltan origen, referencia, notas e id de operación', async () => {
     const { rpc, service } = setup({ data: 'op2', error: null });
     await service.perform({ kind: 'add', locationId: 'l1', lines: [{ itemId: 'a', quantity: 1 }] });
     expect(rpc).toHaveBeenCalledWith(
       'perform_operation',
-      expect.objectContaining({ p_origin_id: null, p_reference: null, p_notes: null }),
+      expect.objectContaining({
+        p_origin_id: null,
+        p_reference: null,
+        p_notes: null,
+        p_operation_id: null,
+      }),
     );
   });
 

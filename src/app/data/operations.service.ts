@@ -40,6 +40,7 @@ export class OperationsService {
       p_origin_id: input.originId ?? null,
       p_reference: input.reference ?? null,
       p_notes: input.notes ?? null,
+      p_operation_id: input.operationId ?? null,
     });
     if (error) throw error;
     return data as string;

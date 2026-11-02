@@ -214,9 +214,9 @@ select throws_ok(
 select tests.logout();
 
 select ok(not has_function_privilege('anon',
-  'public.perform_operation(text, uuid, jsonb, uuid, text, text)', 'execute'), 'anon sin execute');
+  'public.perform_operation(text, uuid, jsonb, uuid, text, text, uuid)', 'execute'), 'anon sin execute');
 select ok(has_function_privilege('authenticated',
-  'public.perform_operation(text, uuid, jsonb, uuid, text, text)', 'execute'), 'authenticated con execute');
+  'public.perform_operation(text, uuid, jsonb, uuid, text, text, uuid)', 'execute'), 'authenticated con execute');
 
 select * from finish();
 rollback;
