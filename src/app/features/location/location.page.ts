@@ -132,7 +132,7 @@ interface Line {
         </mat-form-field>
       </div>
 
-      @if (filtered().length === 0 && loaded()) {
+      @if (filtered().length === 0 && loaded() && !error()) {
         <p>No hay artículos que mostrar.</p>
       }
 
@@ -254,9 +254,16 @@ export class LocationPage {
     });
   }
 
+  private requestSeq = 0;
+
   private async load(id: string): Promise<void> {
+    const seq = ++this.requestSeq;
+    const stale = () => seq !== this.requestSeq;
     this.loaded.set(false);
     this.error.set('');
+    this.locationName.set('');
+    this.items.set([]);
+    this.stock.set([]);
     if (!this.auth.canOperate(id)) {
       this.loaded.set(true);
       return;
@@ -268,14 +275,15 @@ export class LocationPage {
         this.catalog.items(),
         this.stockService.byLocation(id),
       ]);
+      if (stale()) return;
       this.locationName.set(locations.find((l) => l.id === id)?.name ?? 'Localización');
       this.types.set(types);
       this.items.set(items);
       this.stock.set(stock);
     } catch (e) {
-      this.error.set(dbErrorMessage(e));
+      if (!stale()) this.error.set(dbErrorMessage(e));
     } finally {
-      this.loaded.set(true);
+      if (!stale()) this.loaded.set(true);
     }
   }
 }
