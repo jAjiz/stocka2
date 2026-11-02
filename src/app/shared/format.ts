@@ -20,3 +20,12 @@ const KIND_LABELS: Record<OperationKind, string> = {
 export function operationKindLabel(k: OperationKind): string {
   return KIND_LABELS[k];
 }
+
+/** Normaliza texto para búsquedas: sin acentos, minúsculas y sin espacios en los extremos. */
+export function normalizeText(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .trim();
+}
