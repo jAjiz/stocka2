@@ -78,15 +78,21 @@ update public.profiles set role = 'admin', active = true where id = '<uuid>';
 
 ## Estado
 
-**Plan 1 completado** (base): autenticación (login y cierre de sesión), esquema con RLS y
-funciones `perform_operation`, `create_item` y `search_operations`, shell responsive
-(barra inferior en móvil, menú lateral en escritorio), inicio con las localizaciones accesibles,
-página de localización con sus operaciones (añadir, traer aquí, baja, salida por trabajo),
-stock global e historial con filtros y detalle de operación. Verificado: 123 pruebas pgTAP,
-64 pruebas Vitest, `ng build` sin avisos y recorrido manual a 375 px y 1280 px.
+**Plan 1 completado** (base): autenticación, esquema con RLS y funciones `perform_operation`,
+`create_item` y `search_operations`, shell responsive, inicio, página de localización con sus
+operaciones, stock global e historial con filtros.
+
+**Plan 2 completado** (administración): área solo para administradores con usuarios
+(invitar con nombre, rol y permisos; enlace de acceso con botones Copiar y Compartir;
+regenerar enlace para recuperar la contraseña; editar rol y permisos; desactivar, que además
+banea al usuario en Auth), localizaciones, tipos y artículos (alta, edición, deshabilitar solo
+sin stock y eliminar solo sin historial); pantalla `/acceso` para crear la contraseña desde el
+enlace y página de perfil (nombre visible y contraseña). RLS exige un perfil activo para leer.
+Verificado: 195 pruebas pgTAP, 110 pruebas Vitest, prueba de humo de la Edge Function
+(`npm run test:functions`, 21 comprobaciones), `ng build` sin avisos y recorrido manual de la
+invitación a 1280 px y del área de administración a 375 px.
 
 Pendiente:
 
-- **Plan 2 — administración:** usuarios y enlaces de acceso, localizaciones, artículos y tipos.
 - **Plan 3 — avisos y notificaciones push** con PWA.
 - **Plan 4 — importación CSV/Excel y despliegue** en Cloudflare.

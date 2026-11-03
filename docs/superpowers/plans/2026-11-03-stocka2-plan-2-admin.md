@@ -288,3 +288,15 @@ src/app/
 - [ ] **Step 2:** Recorrido manual a 375 px y 1280 px: invitar un usuario con permiso en Furgoneta 2, copiar el enlace, abrirlo en una ventana privada, crear la contraseña, operar en Furgoneta 2; como admin desactivarlo y comprobar que su sesión deja de ver datos; generar un enlace de recuperación tras reactivarlo; crear, deshabilitar y eliminar una localización, un tipo y un artículo; cambiar el nombre visible y la contraseña en el perfil.
 - [ ] **Step 3:** README: estado "Plan 2 completado" con los recuentos de pruebas, y lo pendiente (planes 3–4).
 - [ ] **Step 4: Commit** `docs: estado tras plan 2`
+
+---
+
+## Notas de ejecución (2026-11-03)
+
+Desviaciones respecto al plan, decididas al implementar:
+
+- **Perfil del invitado:** GoTrue inserta el usuario y aplica `app_metadata` después, así que el trigger `on_auth_user_created` no ve la marca `stocka2_invited` y crea el perfil inactivo. La función activa al invitado explícitamente con `admin_set_user_active` (Tarea 3).
+- **Listas de administración:** usuarios, localizaciones, tipos y artículos usan la misma lista (tarjetas o filas con botones visibles) en móvil y ordenador, en lugar de `mat-table` + menú. Los errores se muestran en un aviso (`role="alert"`) sobre la lista en lugar de un snackbar. Archivos añadidos: `features/admin/catalog-list.component.ts` (lista con buscador y "Mostrar deshabilitados"), `features/admin/catalog-admin.ts` (base común: errores, confirmación, diálogo), `shared/confirm-dialog.component.ts` y `shared/dialog-size.ts`.
+- **Barra inferior en móvil:** la entrada de administración se llama "Admin" (con "Administración" desbordaba a 375 px).
+- **Contraseña repetida:** `setPassword` traduce `same_password` a "La nueva contraseña tiene que ser distinta de la actual.".
+- **Edge Functions en Windows:** la recarga en caliente del runtime local no detecta cambios; hay que reiniciar el contenedor (documentado en el README).

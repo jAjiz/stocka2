@@ -239,6 +239,13 @@ describe('AuthService', () => {
     await expect(auth.setPassword('otra-clave')).rejects.toThrow(
       'No se ha podido cambiar la contraseña. Inténtalo de nuevo.',
     );
+    fake.auth.updateUser.mockResolvedValueOnce({
+      data: {},
+      error: new AuthApiError('New password should be different', 422, 'same_password'),
+    });
+    await expect(auth.setPassword('nueva-clave')).rejects.toThrow(
+      'La nueva contraseña tiene que ser distinta de la actual.',
+    );
   });
 
   it('updateDisplayName actualiza el perfil', async () => {

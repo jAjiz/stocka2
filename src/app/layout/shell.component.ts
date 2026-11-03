@@ -121,7 +121,7 @@ import { AuthService } from '../core/auth.service';
           <a routerLink="/perfil" routerLinkActive="active"> <mat-icon>person</mat-icon>Perfil </a>
           @if (auth.isAdmin()) {
             <a routerLink="/admin" routerLinkActive="active">
-              <mat-icon>admin_panel_settings</mat-icon>Administración
+              <mat-icon>admin_panel_settings</mat-icon>Admin
             </a>
           }
         </nav>

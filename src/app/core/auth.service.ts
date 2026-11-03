@@ -91,14 +91,17 @@ export class AuthService {
   }
 
   async setPassword(password: string): Promise<void> {
-    let failed: boolean;
+    let code: string | null;
     try {
       const { error } = await this.supabase.auth.updateUser({ password });
-      failed = !!error;
+      code = error ? ((error as { code?: string }).code ?? 'unknown') : null;
     } catch {
-      failed = true;
+      code = 'unknown';
     }
-    if (failed) throw new Error('No se ha podido cambiar la contraseña. Inténtalo de nuevo.');
+    if (code === 'same_password') {
+      throw new Error('La nueva contraseña tiene que ser distinta de la actual.');
+    }
+    if (code) throw new Error('No se ha podido cambiar la contraseña. Inténtalo de nuevo.');
   }
 
   /** Cambia el nombre visible propio. Los errores de la RPC se propagan (dbErrorMessage). */
