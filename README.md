@@ -4,31 +4,31 @@ Aplicación de inventario: SPA Angular 22 + Supabase.
 
 ## Requisitos
 
-- Node 24
+- Node 24 y pnpm 11 (`npm install -g pnpm` o `corepack enable`)
 - Docker arrancado (necesario para Supabase local)
 
 ## Desarrollo
 
 ```bash
-npm install
-npm run db:start   # arranca Supabase local (supabase start)
-npm start          # ng serve en http://localhost:4200
-npm test           # pruebas unitarias (Vitest)
-npm run db:reset   # reinicia la base de datos local (migraciones + seed)
-npm run db:test    # pruebas de base de datos (supabase test db)
-npm run test:functions  # prueba de humo de la Edge Function admin-users (tras db:reset)
-npx ng build       # compilación
+pnpm install
+pnpm db:start       # arranca Supabase local (supabase start)
+pnpm start          # ng serve en http://localhost:4200
+pnpm test           # pruebas unitarias (Vitest)
+pnpm db:reset       # reinicia la base de datos local (migraciones + seed)
+pnpm db:test        # pruebas de base de datos (supabase test db)
+pnpm test:functions  # prueba de humo de la Edge Function admin-users (tras db:reset)
+pnpm ng build       # compilación
 ```
 
-Las Edge Functions (`supabase/functions`) las sirve `npm run db:start`. En Windows la recarga
+Las Edge Functions (`supabase/functions`) las sirve `pnpm db:start`. En Windows la recarga
 en caliente no detecta cambios: tras editar una función, `docker restart supabase_edge_runtime_stocka2`.
 
-`npx supabase status` muestra la URL y las claves locales. Los valores de
+`pnpm exec supabase status` muestra la URL y las claves locales. Los valores de
 desarrollo están en `src/environments/environment.development.ts`.
 
 ## Usuarios de desarrollo
 
-`npm run db:reset` carga `supabase/seed.sql`: 3 localizaciones (Taller, Furgoneta 1,
+`pnpm db:reset` carga `supabase/seed.sql`: 3 localizaciones (Taller, Furgoneta 1,
 Furgoneta 2), 3 tipos, 8 artículos con stock inicial en Taller (mediante operaciones
 `add`) y estos usuarios. La contraseña es `stocka2-dev` (solo desarrollo, nunca en producción).
 
@@ -37,7 +37,7 @@ Furgoneta 2), 3 tipos, 8 artículos con stock inicial en Taller (mediante operac
 | `admin@stocka2.test`   | admin | todas las localizaciones       |
 | `furgo1@stocka2.test`  | user  | operar en Furgoneta 1          |
 
-Las pruebas de BD (`npm run db:test`) vacían estos datos dentro de su transacción
+Las pruebas de BD (`pnpm db:test`) vacían estos datos dentro de su transacción
 (`tests.clear_seed()`), así que no los alteran.
 
 ## Producción
@@ -59,10 +59,10 @@ primer administrador se activa a mano (abajo).
 
 ### Edge Function y Auth
 
-- Despliega la función: `npx supabase functions deploy admin-users`.
+- Despliega la función: `pnpm exec supabase functions deploy admin-users`.
 - Authentication → Email → **Email OTP Expiration**: 86400 (24 h, el máximo). Es la caducidad
   de los enlaces de acceso. Si usas otro valor, ponlo también en el secreto
-  `STOCKA2_LINK_TTL_SECONDS` (`npx supabase secrets set STOCKA2_LINK_TTL_SECONDS=…`), que
+  `STOCKA2_LINK_TTL_SECONDS` (`pnpm exec supabase secrets set STOCKA2_LINK_TTL_SECONDS=…`), que
   la función usa para indicar al administrador cuándo caduca el enlace.
 - Authentication → Providers → Email → **Minimum password length**: 8.
 - No hace falta configurar URLs de redirección: los enlaces apuntan a la propia aplicación
@@ -92,7 +92,7 @@ banea al usuario en Auth), localizaciones, tipos y artículos (alta, edición, d
 sin stock y eliminar solo sin historial); pantalla `/acceso` para crear la contraseña desde el
 enlace y página de perfil (nombre visible y contraseña). RLS exige un perfil activo para leer.
 Verificado: 201 pruebas pgTAP, 117 pruebas Vitest, prueba de humo de la Edge Function
-(`npm run test:functions`, 21 comprobaciones), `ng build` sin avisos y recorrido manual de la
+(`pnpm test:functions`, 21 comprobaciones), `ng build` sin avisos y recorrido manual de la
 invitación a 1280 px y del área de administración a 375 px.
 
 Pendiente:
