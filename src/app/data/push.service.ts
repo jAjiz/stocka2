@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { SwPush } from '@angular/service-worker';
+import { firstValueFrom, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { SUPABASE } from '../core/supabase';
 
@@ -91,10 +92,29 @@ export class PushService {
     }
   }
 
-  /** Como disable, pero nunca lanza: se usa al cerrar sesión. */
+  /**
+   * Como disable, pero nunca lanza y siempre intenta soltar la suscripción del navegador aunque
+   * falle el servidor: se usa al cerrar sesión, y en un móvil compartido el usuario anterior no
+   * debe seguir recibiendo avisos.
+   */
   async forgetDevice(): Promise<void> {
+    let sub = this.subscription();
+    if (!sub && this.swPush.isEnabled) {
+      // La señal aún puede estar vacía si se cierra sesión nada más cargar.
+      sub = await firstValueFrom(this.swPush.subscription.pipe(timeout(2000)), {
+        defaultValue: null,
+      }).catch(() => null);
+    }
+    if (!sub) return;
     try {
-      await this.disable();
+      await this.supabase
+        .rpc('delete_push_subscription', { p_endpoint: sub.endpoint })
+        .then(() => undefined);
+    } catch {
+      // se ignora: lo importante es soltar la suscripción local
+    }
+    try {
+      await this.swPush.unsubscribe();
     } catch {
       // cerrar sesión no debe fallar por el push
     }

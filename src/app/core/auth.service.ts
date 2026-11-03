@@ -4,6 +4,7 @@ import { Profile } from '../data/models';
 import { PushService } from '../data/push.service';
 import { SUPABASE } from './supabase';
 
+const FORGET_DEVICE_TIMEOUT_MS = 3000;
 const NETWORK_ERROR = 'Sin conexión. Inténtalo de nuevo.';
 const INVALID_LINK = 'El enlace no es válido o ha caducado. Pide uno nuevo al administrador.';
 
@@ -121,7 +122,11 @@ export class AuthService {
 
   async signOut(): Promise<void> {
     // Con la sesión aún válida, para que la RPC pueda borrar la suscripción del dispositivo.
-    await this.push.forgetDevice();
+    // Con tope de tiempo: una red caída no debe impedir cerrar la sesión.
+    await Promise.race([
+      this.push.forgetDevice(),
+      new Promise<void>((resolve) => setTimeout(resolve, FORGET_DEVICE_TIMEOUT_MS)),
+    ]);
     try {
       await this.supabase.auth.signOut();
     } catch {

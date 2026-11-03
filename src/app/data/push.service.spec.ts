@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { SwPush } from '@angular/service-worker';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { SUPABASE } from '../core/supabase';
 import { PushService } from './push.service';
@@ -108,5 +108,25 @@ describe('PushService', () => {
     const { push, rpc } = setup({ subscription: fakeSubscription() });
     rpc.mockRejectedValue(new Error('sin red'));
     await expect(push.forgetDevice()).resolves.toBeUndefined();
+  });
+
+  it('forgetDevice suelta la suscripción del navegador aunque falle la RPC', async () => {
+    const { push, swPush, rpc } = setup({ subscription: fakeSubscription() });
+    rpc.mockRejectedValue(new Error('sin red'));
+    await expect(push.forgetDevice()).resolves.toBeUndefined();
+    expect(swPush.unsubscribe).toHaveBeenCalled();
+  });
+
+  it('forgetDevice borra la suscripción aunque la señal aún no se haya poblado', async () => {
+    const { push, rpc, swPush } = setup();
+    // El observable de SwPush todavía no ha emitido cuando se cierra sesión.
+    const late = new Subject<PushSubscription | null>();
+    (swPush as { subscription: unknown }).subscription = late.asObservable();
+    const pending = push.forgetDevice();
+    late.next(fakeSubscription('https://push.example/tardia'));
+    await pending;
+    expect(rpc).toHaveBeenCalledWith('delete_push_subscription', {
+      p_endpoint: 'https://push.example/tardia',
+    });
   });
 });

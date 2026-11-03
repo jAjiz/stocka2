@@ -221,6 +221,21 @@ describe('AuthService', () => {
     );
   });
 
+  it('signOut cierra la sesión aunque forgetDevice se quede colgado', async () => {
+    const { auth, push, signOut } = setup({ restored: true });
+    await auth.ready;
+    push.forgetDevice.mockReturnValue(new Promise(() => undefined));
+    vi.useFakeTimers();
+    try {
+      const done = auth.signOut();
+      await vi.advanceTimersByTimeAsync(3000);
+      await done;
+      expect(signOut).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('acceptLink con un enlace caducado da el mensaje de enlace no válido', async () => {
     const { auth } = setup({
       verifyOtpError: new AuthApiError('Token has expired or is invalid', 403, 'otp_expired'),
