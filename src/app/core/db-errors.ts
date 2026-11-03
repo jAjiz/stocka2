@@ -18,9 +18,11 @@ const MESSAGES: Record<string, string> = {
   last_admin: 'Tiene que quedar al menos un administrador activo.',
   email_exists: 'Ya existe un usuario con ese correo.',
   inactive_user: 'El usuario está desactivado. Actívalo antes de generar un enlace.',
+  network: 'Sin conexión. Inténtalo de nuevo.',
 };
 
 const GENERIC = 'Ha ocurrido un error inesperado. Inténtalo de nuevo.';
+const ADMIN_FORBIDDEN = 'Solo un administrador activo puede hacer esto.';
 
 interface StockShortage {
   item_id: string;
@@ -51,4 +53,10 @@ export function dbErrorMessage(err: unknown, itemNames?: Map<string, string>): s
   const code = typeof e?.message === 'string' ? e.message : '';
   if (code === 'insufficient_stock') return stockMessage(e?.details, itemNames);
   return MESSAGES[code] ?? GENERIC;
+}
+
+/** Igual que dbErrorMessage, pero `forbidden` en la administración no habla de localizaciones. */
+export function adminErrorMessage(err: unknown): string {
+  const e = err as { message?: unknown } | null;
+  return e?.message === 'forbidden' ? ADMIN_FORBIDDEN : dbErrorMessage(err);
 }

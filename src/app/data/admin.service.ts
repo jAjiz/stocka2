@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { FunctionsHttpError } from '@supabase/supabase-js';
+import { FunctionsFetchError, FunctionsHttpError } from '@supabase/supabase-js';
 import { SUPABASE } from '../core/supabase';
 import { buildAccessUrl } from '../shared/access-link';
 import { AccessLink, AdminUser, InviteInput, Location, UserInput } from './models';
@@ -11,7 +11,7 @@ interface AdminUserDbRow {
   role: AdminUser['role'];
   active: boolean;
   location_ids: string[];
-  last_sign_in_at: string | null;
+  has_password: boolean;
 }
 
 interface LinkResponse {
@@ -34,7 +34,7 @@ export class AdminService {
       role: r.role,
       active: r.active,
       locationIds: r.location_ids ?? [],
-      lastSignInAt: r.last_sign_in_at ? new Date(r.last_sign_in_at) : null,
+      hasPassword: r.has_password,
     }));
   }
 
@@ -120,7 +120,7 @@ export class AdminService {
       }
       throw { message: code };
     }
-    throw { message: 'unexpected' };
+    throw { message: error instanceof FunctionsFetchError ? 'network' : 'unexpected' };
   }
 
   private toLink(r: LinkResponse): AccessLink {

@@ -60,5 +60,8 @@ describe('ProfilePage', () => {
     await fixture.whenStable();
     expect(auth.setPassword).toHaveBeenCalledTimes(1);
     expect(auth.setPassword).toHaveBeenCalledWith('nueva-clave');
+    fixture.detectChanges();
+    expect(pw.value).toBe('');
+    expect(repeat.value).toBe('');
   });
 });

@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { dbErrorMessage } from '../../core/db-errors';
+import { adminErrorMessage } from '../../core/db-errors';
 import { ItemType, Location } from '../../data/models';
 
 export type NameDialogField = 'name' | 'kind' | 'type' | 'reference';
@@ -131,7 +131,7 @@ export class NameDialogComponent {
       });
       this.ref.close(true);
     } catch (e) {
-      this.error.set(dbErrorMessage(e));
+      this.error.set(adminErrorMessage(e));
     } finally {
       this.busy.set(false);
     }

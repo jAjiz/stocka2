@@ -28,7 +28,7 @@ returns table (
   role text,
   active boolean,
   location_ids uuid[],
-  last_sign_in_at timestamptz,
+  has_password boolean,
   created_at timestamptz
 )
 language plpgsql stable security definer set search_path = ''
@@ -41,7 +41,7 @@ begin
     select p.id, u.email::text, p.display_name, p.role, p.active,
            coalesce(array(select lp.location_id from public.location_permissions lp
                           where lp.user_id = p.id order by lp.location_id), '{}'::uuid[]),
-           u.last_sign_in_at, p.created_at
+           coalesce(u.encrypted_password, '') <> '', p.created_at
     from public.profiles p
     join auth.users u on u.id = p.id
     order by p.display_name, p.id;

@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -86,6 +93,7 @@ export class ProfilePage {
   protected readonly nameError = signal<string | null>(null);
   protected readonly savingPassword = signal(false);
   protected readonly passwordError = signal<string | null>(null);
+  private readonly passwordForm = viewChild.required(PasswordFormComponent);
 
   protected async saveName(event: Event): Promise<void> {
     event.preventDefault();
@@ -110,6 +118,7 @@ export class ProfilePage {
     this.passwordError.set(null);
     try {
       await this.auth.setPassword(password);
+      this.passwordForm().reset();
       this.snackBar.open('Contraseña cambiada', undefined, { duration: 3000 });
     } catch (e) {
       this.passwordError.set((e as Error).message);

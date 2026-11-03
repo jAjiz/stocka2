@@ -6,7 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { dbErrorMessage } from '../../core/db-errors';
+import { adminErrorMessage } from '../../core/db-errors';
+import { AuthService } from '../../core/auth.service';
 import { AdminService } from '../../data/admin.service';
 import { CatalogService } from '../../data/catalog.service';
 import { AccessLink, AdminUser, Location } from '../../data/models';
@@ -17,7 +18,7 @@ import { UserDialogComponent, UserDialogData, UserDialogResult } from './user-di
 
 export function userStatus(u: AdminUser): string {
   if (!u.active) return 'Desactivado';
-  return u.lastSignInAt ? 'Activo' : 'Pendiente de acceso';
+  return u.hasPassword ? 'Activo' : 'Pendiente de acceso';
 }
 
 @Component({
@@ -77,7 +78,9 @@ export function userStatus(u: AdminUser): string {
             <button mat-button type="button" (click)="edit(u)">Editar</button>
             @if (u.active) {
               <button mat-button type="button" (click)="link(u)">Generar enlace de acceso</button>
-              <button mat-button type="button" (click)="setActive(u, false)">Desactivar</button>
+              @if (!isSelf(u)) {
+                <button mat-button type="button" (click)="setActive(u, false)">Desactivar</button>
+              }
             } @else {
               <button mat-button type="button" (click)="setActive(u, true)">Activar</button>
             }
@@ -89,6 +92,7 @@ export function userStatus(u: AdminUser): string {
 })
 export class UsersPage {
   private readonly admin = inject(AdminService);
+  private readonly auth = inject(AuthService);
   private readonly catalog = inject(CatalogService);
   private readonly dialog = inject(MatDialog);
   private readonly pending = inject(PendingTasks);
@@ -107,6 +111,11 @@ export class UsersPage {
 
   constructor() {
     void this.run(() => this.load());
+  }
+
+  /** Uno mismo no se desactiva ni se quita el rol: perdería el acceso a esta página. */
+  protected isSelf(u: AdminUser): boolean {
+    return u.id === this.auth.profile()?.id;
   }
 
   protected locationsLabel(u: AdminUser): string {
@@ -156,7 +165,7 @@ export class UsersPage {
     return firstValueFrom(
       this.dialog
         .open<UserDialogComponent, UserDialogData, UserDialogResult>(UserDialogComponent, {
-          data: { user, locations: this.locations() },
+          data: { user, locations: this.locations(), isSelf: !!user && this.isSelf(user) },
           disableClose: true,
           ...dialogSize(this.isHandset()),
         })
@@ -184,7 +193,7 @@ export class UsersPage {
     try {
       await fn();
     } catch (e) {
-      this.error.set(dbErrorMessage(e));
+      this.error.set(adminErrorMessage(e));
     } finally {
       done();
     }

@@ -7,6 +7,8 @@ import { AuthService } from '../../core/auth.service';
 import { PasswordFormComponent } from '../../shared/password-form.component';
 
 const INVALID_LINK = 'El enlace no es válido o ha caducado. Pide uno nuevo al administrador.';
+/** Token ya canjeado en esta pestaña: si la página se recarga, se va directo a la contraseña. */
+const ACCEPTED_KEY = 'stocka2.acceptedLink';
 
 /**
  * Destino de los enlaces de invitación y recuperación (/acceso?t=<token_hash>).
@@ -78,10 +80,21 @@ export class AccessPage {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 
+  constructor() {
+    // verifyOtp gasta el token: si la pestaña se recargó antes de guardar la contraseña,
+    // la sesión de ese canje sigue viva y se continúa sin volver a canjearlo.
+    void this.auth.ready.then(() => {
+      if (this.token && readAccepted() === this.token && this.auth.session()) {
+        this.accepted.set(true);
+      }
+    });
+  }
+
   protected async accept(): Promise<void> {
     if (!this.token) return;
     await this.run(async () => {
       await this.auth.acceptLink(this.token!);
+      writeAccepted(this.token);
       this.accepted.set(true);
     });
   }
@@ -89,6 +102,7 @@ export class AccessPage {
   protected async save(password: string): Promise<void> {
     await this.run(async () => {
       await this.auth.setPassword(password);
+      writeAccepted(null);
       this.snackBar.open('Contraseña guardada', undefined, { duration: 3000 });
       await this.router.navigateByUrl('/');
     });
@@ -104,5 +118,22 @@ export class AccessPage {
     } finally {
       this.busy.set(false);
     }
+  }
+}
+
+function readAccepted(): string | null {
+  try {
+    return sessionStorage.getItem(ACCEPTED_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeAccepted(token: string | null): void {
+  try {
+    if (token) sessionStorage.setItem(ACCEPTED_KEY, token);
+    else sessionStorage.removeItem(ACCEPTED_KEY);
+  } catch {
+    // sin almacenamiento: tras recargar habrá que pedir otro enlace
   }
 }

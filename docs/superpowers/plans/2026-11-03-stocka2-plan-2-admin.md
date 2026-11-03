@@ -300,3 +300,8 @@ Desviaciones respecto al plan, decididas al implementar:
 - **Barra inferior en móvil:** la entrada de administración se llama "Admin" (con "Administración" desbordaba a 375 px).
 - **Contraseña repetida:** `setPassword` traduce `same_password` a "La nueva contraseña tiene que ser distinta de la actual.".
 - **Edge Functions en Windows:** la recarga en caliente del runtime local no detecta cambios; hay que reiniciar el contenedor (documentado en el README).
+- **Artículos sin filtro por tipo:** la búsqueda de texto cubre el nombre, el tipo y la referencia, así que no se añadió el selector de tipo de la Tarea 6.
+
+### Revisión de la rama (2026-11-03)
+
+Corregido tras la revisión: recargar `/acceso` después de pulsar "Continuar" ya no deja al invitado sin salida (`sessionStorage` recuerda el token canjeado en esa pestaña); "Pendiente de acceso" se basa en si el usuario tiene contraseña (`has_password`), no en `last_sign_in_at`; un administrador no ve "Desactivar" ni puede cambiar su propio rol en la UI; `forbidden` en la administración dice "Solo un administrador activo puede hacer esto."; sin red, la Edge Function da "Sin conexión"; la función deshace la invitación si falla el enlace, revierte el perfil si falla el baneo, distingue 401/500 de 403 al comprobar `is_admin` y convierte los rechazos de validación de GoTrue en `invalid_input`; el formulario de contraseña del perfil se vacía tras guardar; más pruebas pgTAP de `not_found`, `has_password` y `update_my_profile` con usuario inactivo.

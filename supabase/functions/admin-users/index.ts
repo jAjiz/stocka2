@@ -99,9 +99,9 @@ async function invite(
     user_metadata: { display_name: displayName },
   });
   if (createError || !created.user) {
-    if ((createError as { code?: string } | null)?.code === 'email_exists') {
-      throw new HttpError(400, 'email_exists');
-    }
+    const { code, status } = (createError ?? {}) as { code?: string; status?: number };
+    if (code === 'email_exists') throw new HttpError(400, 'email_exists');
+    if (status === 400 || status === 422) throw new HttpError(400, 'invalid_input');
     console.error('createUser', createError);
     throw new HttpError(500, 'unexpected');
   }
@@ -122,14 +122,23 @@ async function invite(
     }));
   }
   if (updateError) {
-    // Deshacer: sin perfil ni usuario, se puede volver a invitar el mismo correo.
-    await admin.from('location_permissions').delete().eq('user_id', userId);
-    await admin.from('profiles').delete().eq('id', userId);
-    await admin.auth.admin.deleteUser(userId);
+    await undoInvite(admin, userId);
     throw rpcError(updateError);
   }
 
-  return { userId, ...(await generateLink(admin, userId)) };
+  try {
+    return { userId, ...(await generateLink(admin, userId)) };
+  } catch (e) {
+    await undoInvite(admin, userId);
+    throw e;
+  }
+}
+
+/** Deshace una invitación a medias: sin perfil ni usuario, se puede volver a invitar el correo. */
+async function undoInvite(admin: SupabaseClient, userId: string) {
+  await admin.from('location_permissions').delete().eq('user_id', userId);
+  await admin.from('profiles').delete().eq('id', userId);
+  await admin.auth.admin.deleteUser(userId);
 }
 
 async function setActive(
@@ -153,7 +162,10 @@ async function setActive(
     ban_duration: active ? 'none' : BAN_FOREVER,
   });
   if (banError) {
+    // Se revierte el perfil para que la lista no muestre "Activo" a un usuario aún baneado
+    // (o "Desactivado" a uno que todavía puede entrar).
     console.error('ban', banError);
+    await caller.rpc('admin_set_user_active', { p_user_id: userId, p_active: !active });
     throw new HttpError(500, 'unexpected');
   }
   return {};
@@ -176,8 +188,13 @@ Deno.serve(async (req) => {
   });
 
   try {
-    const { data: isAdmin, error } = await caller.rpc('is_admin');
-    if (error || isAdmin !== true) throw new HttpError(403, 'forbidden');
+    const { data: isAdmin, error, status } = await caller.rpc('is_admin');
+    if (error) {
+      if (status === 401) throw new HttpError(401, 'forbidden'); // JWT caducado o no válido
+      console.error('is_admin', error);
+      throw new HttpError(500, 'unexpected');
+    }
+    if (isAdmin !== true) throw new HttpError(403, 'forbidden');
 
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     if (!body || typeof body !== 'object') throw new HttpError(400, 'invalid_input');

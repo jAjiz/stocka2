@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { FunctionsHttpError } from '@supabase/supabase-js';
+import { FunctionsFetchError, FunctionsHttpError } from '@supabase/supabase-js';
 import { SUPABASE } from '../core/supabase';
 import { AdminService } from './admin.service';
 
@@ -37,6 +37,11 @@ describe('AdminService', () => {
   it('otros errores de la función son unexpected', async () => {
     const { service } = setup({ data: null, error: new Error('red') });
     await expect(service.regenerateLink('u1')).rejects.toEqual({ message: 'unexpected' });
+  });
+
+  it('sin red la función da network', async () => {
+    const { service } = setup({ data: null, error: new FunctionsFetchError(new TypeError('x')) });
+    await expect(service.setUserActive('u1', false)).rejects.toEqual({ message: 'network' });
   });
 
   it('updateUser llama a la RPC con los parámetros', async () => {

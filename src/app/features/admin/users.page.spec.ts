@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
+import { signal } from '@angular/core';
+import { AuthService } from '../../core/auth.service';
 import { AdminService } from '../../data/admin.service';
 import { CatalogService } from '../../data/catalog.service';
 import { AdminUser } from '../../data/models';
@@ -15,7 +17,7 @@ const users: AdminUser[] = [
     role: 'admin',
     active: true,
     locationIds: [],
-    lastSignInAt: new Date(),
+    hasPassword: true,
   },
   {
     id: 'p',
@@ -24,7 +26,7 @@ const users: AdminUser[] = [
     role: 'user',
     active: true,
     locationIds: ['l1'],
-    lastSignInAt: null,
+    hasPassword: false,
   },
   {
     id: 'd',
@@ -33,7 +35,7 @@ const users: AdminUser[] = [
     role: 'user',
     active: false,
     locationIds: [],
-    lastSignInAt: new Date(),
+    hasPassword: true,
   },
 ];
 
@@ -51,6 +53,7 @@ async function setup() {
       provideRouter([]),
       { provide: AdminService, useValue: admin },
       { provide: CatalogService, useValue: catalog },
+      { provide: AuthService, useValue: { profile: signal({ id: 'p' }) } },
     ],
   });
   const fixture = TestBed.createComponent(UsersPage);
@@ -88,5 +91,13 @@ describe('UsersPage', () => {
     expect(el.textContent).toContain('Tiene que quedar al menos un administrador activo.');
     expect(admin.users).toHaveBeenCalledTimes(1);
     expect(card(el, 'Ana').textContent).toContain('Activo');
+  });
+
+  it('en la propia tarjeta no se ofrece Desactivar', async () => {
+    const { el } = await setup();
+    const labels = (name: string) =>
+      [...card(el, name).querySelectorAll('button')].map((b) => b.textContent?.trim());
+    expect(labels('Pedro')).not.toContain('Desactivar');
+    expect(labels('Ana')).toContain('Desactivar');
   });
 });

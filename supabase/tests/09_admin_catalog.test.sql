@@ -1,7 +1,7 @@
 begin;
 \ir _helpers.sql
 select tests.clear_seed();
-select plan(35);
+select plan(36);
 
 select tests.create_user('admin@stocka2.test', 'admin') as a \gset
 select tests.create_user('u@stocka2.test') as u \gset
@@ -133,6 +133,8 @@ select throws_ok($$select public.admin_set_item_active('00000000-0000-0000-0000-
   'P0001', 'not_found', 'artículo inexistente');
 select throws_ok($$select public.admin_delete_item_type('00000000-0000-0000-0000-0000000000ff')$$,
   'P0001', 'not_found', 'tipo inexistente');
+select throws_ok($$select public.admin_save_item_type('00000000-0000-0000-0000-0000000000ff', 'Z')$$,
+  'P0001', 'not_found', 'renombrar un tipo inexistente');
 
 -- anon
 select tests.logout();

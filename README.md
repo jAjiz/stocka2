@@ -51,8 +51,11 @@ cualquiera podría crear una cuenta con `POST /auth/v1/signup`. Antes de publica
 - **Authentication → Sign In / Providers → desactivar "Allow new users to sign up".**
 
 Como defensa en profundidad, el trigger `on_auth_user_created` crea el perfil **inactivo**
-salvo que el usuario lleve `stocka2_invited = true` en `raw_app_meta_data` (solo lo puede
-escribir `service_role`). Un usuario con el perfil inactivo no puede entrar ni operar.
+salvo que el usuario se inserte ya con `stocka2_invited = true` en `raw_app_meta_data` (solo lo
+puede escribir `service_role`). Un usuario con el perfil inactivo no puede entrar ni leer datos.
+En la práctica GoTrue aplica `app_metadata` después del `insert`, así que **todos** los usuarios
+nacen inactivos: la Edge Function `admin-users` activa a los invitados de forma explícita, y el
+primer administrador se activa a mano (abajo).
 
 ### Edge Function y Auth
 
@@ -88,7 +91,7 @@ regenerar enlace para recuperar la contraseña; editar rol y permisos; desactiva
 banea al usuario en Auth), localizaciones, tipos y artículos (alta, edición, deshabilitar solo
 sin stock y eliminar solo sin historial); pantalla `/acceso` para crear la contraseña desde el
 enlace y página de perfil (nombre visible y contraseña). RLS exige un perfil activo para leer.
-Verificado: 195 pruebas pgTAP, 110 pruebas Vitest, prueba de humo de la Edge Function
+Verificado: 201 pruebas pgTAP, 117 pruebas Vitest, prueba de humo de la Edge Function
 (`npm run test:functions`, 21 comprobaciones), `ng build` sin avisos y recorrido manual de la
 invitación a 1280 px y del área de administración a 375 px.
 

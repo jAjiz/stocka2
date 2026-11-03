@@ -74,8 +74,8 @@ export interface AdminUser {
   role: Profile['role'];
   active: boolean;
   locationIds: string[];
-  /** null: nunca ha entrado (invitación pendiente). */
-  lastSignInAt: Date | null;
+  /** false: aún no ha creado su contraseña (invitación pendiente). */
+  hasPassword: boolean;
 }
 
 export interface UserInput {

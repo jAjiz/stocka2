@@ -1,7 +1,7 @@
 begin;
 \ir _helpers.sql
 select tests.clear_seed();
-select plan(18);
+select plan(23);
 
 select tests.create_user('a@stocka2.test', 'admin') as a \gset
 select tests.create_user('u@stocka2.test') as u \gset
@@ -57,6 +57,29 @@ select tests.login_as(:'u');
 select public.update_my_profile('  Pepe ');
 select is((select display_name from public.profiles where id = :'u'), 'Pepe', 'update_my_profile recorta');
 select throws_ok($$select public.update_my_profile('')$$, 'P0001', 'invalid_input', 'nombre propio vacío');
+
+-- Ids inexistentes
+select tests.login_as(:'u');
+select throws_ok($$select public.admin_set_user_active('00000000-0000-0000-0000-0000000000ff', false)$$,
+  'P0001', 'not_found', 'activar/desactivar un usuario inexistente');
+select throws_ok($$select public.admin_update_user('00000000-0000-0000-0000-0000000000ff', 'X', 'user', '{}')$$,
+  'P0001', 'not_found', 'editar un usuario inexistente');
+
+-- Pendiente de acceso: sin contraseña
+select tests.logout();
+update auth.users set encrypted_password = crypt('x', gen_salt('bf')) where id = :'u';
+select tests.login_as(:'u');
+select is((select has_password from public.admin_list_users() where id = :'u'), true,
+  'con contraseña: has_password');
+select is((select has_password from public.admin_list_users() where id = :'a'), false,
+  'sin contraseña: pendiente de acceso');
+
+-- update_my_profile exige perfil activo
+select tests.logout();
+update public.profiles set active = false where id = :'u';
+select tests.login_as(:'u');
+select throws_ok($$select public.update_my_profile('Otro')$$, 'P0001', 'forbidden',
+  'un usuario desactivado no cambia su nombre');
 
 select tests.logout();
 set local role anon;

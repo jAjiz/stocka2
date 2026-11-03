@@ -1,4 +1,4 @@
-import { dbErrorMessage } from './db-errors';
+import { adminErrorMessage, dbErrorMessage } from './db-errors';
 
 describe('dbErrorMessage', () => {
   const cases: [string, string][] = [
@@ -27,6 +27,7 @@ describe('dbErrorMessage', () => {
     ['last_admin', 'Tiene que quedar al menos un administrador activo.'],
     ['email_exists', 'Ya existe un usuario con ese correo.'],
     ['inactive_user', 'El usuario está desactivado. Actívalo antes de generar un enlace.'],
+    ['network', 'Sin conexión. Inténtalo de nuevo.'],
   ];
 
   for (const [code, text] of cases) {
@@ -55,5 +56,19 @@ describe('dbErrorMessage', () => {
     expect(dbErrorMessage({ foo: 1 })).toBe(generic);
     expect(dbErrorMessage(null)).toBe(generic);
     expect(dbErrorMessage({ message: 'otra cosa' })).toBe(generic);
+  });
+});
+
+describe('adminErrorMessage', () => {
+  it('forbidden no habla de localizaciones', () => {
+    expect(adminErrorMessage({ message: 'forbidden' })).toBe(
+      'Solo un administrador activo puede hacer esto.',
+    );
+  });
+
+  it('el resto de códigos usa dbErrorMessage', () => {
+    expect(adminErrorMessage({ message: 'last_admin' })).toBe(
+      'Tiene que quedar al menos un administrador activo.',
+    );
   });
 });

@@ -5,7 +5,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
-import { dbErrorMessage } from '../../core/db-errors';
+import { adminErrorMessage } from '../../core/db-errors';
 import { AdminService } from '../../data/admin.service';
 import { AccessLink, AdminUser, Location, Profile } from '../../data/models';
 
@@ -13,6 +13,8 @@ export interface UserDialogData {
   /** null: invitar un usuario nuevo. */
   user: AdminUser | null;
   locations: Location[];
+  /** Editando el propio usuario: el rol no se puede cambiar. */
+  isSelf?: boolean;
 }
 
 /** Resultado: el enlace de acceso y el nombre al invitar, `true` al editar. */
@@ -38,6 +40,10 @@ export type UserDialogResult = { link: AccessLink; name: string } | true;
     .locations {
       display: flex;
       flex-direction: column;
+    }
+    .hint {
+      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-body-small);
     }
     .error {
       color: var(--mat-sys-error);
@@ -70,10 +76,18 @@ export type UserDialogResult = { link: AccessLink; name: string } | true;
             (input)="displayName.set($any($event.target).value)"
           />
         </mat-form-field>
-        <mat-radio-group aria-label="Rol" [value]="role()" (change)="role.set($event.value)">
+        <mat-radio-group
+          aria-label="Rol"
+          [disabled]="!!data.isSelf"
+          [value]="role()"
+          (change)="role.set($event.value)"
+        >
           <mat-radio-button value="user">Usuario</mat-radio-button>
           <mat-radio-button value="admin">Administrador</mat-radio-button>
         </mat-radio-group>
+        @if (data.isSelf) {
+          <p class="hint">No puedes cambiar tu propio rol.</p>
+        }
         @if (role() === 'user') {
           <div class="locations" role="group" aria-label="Localizaciones">
             <p>Puede operar en:</p>
@@ -142,7 +156,7 @@ export class UserDialogComponent {
         this.ref.close({ link, name: input.displayName });
       }
     } catch (e) {
-      this.error.set(dbErrorMessage(e));
+      this.error.set(adminErrorMessage(e));
     } finally {
       this.busy.set(false);
     }

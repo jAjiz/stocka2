@@ -70,6 +70,12 @@ export class PasswordFormComponent {
     () => this.password().length >= MIN_PASSWORD_LENGTH && this.repeat() === this.password(),
   );
 
+  /** Vacía los campos (tras guardar con éxito). */
+  reset(): void {
+    this.password.set('');
+    this.repeat.set('');
+  }
+
   protected submit(event: Event): void {
     event.preventDefault();
     if (this.valid() && !this.busy()) this.submitted.emit(this.password());

@@ -3,7 +3,7 @@ import { inject, PendingTasks, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom, map } from 'rxjs';
-import { dbErrorMessage } from '../../core/db-errors';
+import { adminErrorMessage } from '../../core/db-errors';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/confirm-dialog.component';
 import { dialogSize } from '../../shared/dialog-size';
 import { NameDialogComponent, NameDialogData } from './name-dialog.component';
@@ -31,7 +31,7 @@ export abstract class CatalogAdmin {
       await fn();
       if (reload) await this.load();
     } catch (e) {
-      this.error.set(dbErrorMessage(e));
+      this.error.set(adminErrorMessage(e));
     } finally {
       done();
     }
