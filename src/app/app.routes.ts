@@ -36,6 +36,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/history/history.page').then((m) => m.HistoryPage),
       },
       {
+        path: 'perfil',
+        loadComponent: () => import('./features/profile/profile.page').then((m) => m.ProfilePage),
+      },
+      {
         path: 'admin',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/admin.page').then((m) => m.AdminPage),
