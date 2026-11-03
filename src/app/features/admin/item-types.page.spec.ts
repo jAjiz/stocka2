@@ -5,8 +5,8 @@ import { AdminService } from '../../data/admin.service';
 import { CatalogService } from '../../data/catalog.service';
 import { ItemTypesPage } from './item-types.page';
 
-async function setup(deleteResult: Promise<void>) {
-  const admin = { deleteItemType: vi.fn().mockReturnValue(deleteResult) };
+async function setup(deleteResult: () => Promise<void>) {
+  const admin = { deleteItemType: vi.fn().mockImplementation(deleteResult) };
   const catalog = {
     allItemTypes: vi.fn().mockResolvedValue([{ id: 't1', name: 'Fontanería', active: true }]),
   };
@@ -38,7 +38,7 @@ async function setup(deleteResult: Promise<void>) {
 
 describe('ItemTypesPage', () => {
   it('eliminar un tipo en uso muestra el error', async () => {
-    const { el, remove, admin } = await setup(Promise.reject({ message: 'type_in_use' }));
+    const { el, remove, admin } = await setup(() => Promise.reject({ message: 'type_in_use' }));
     await remove();
     expect(admin.deleteItemType).toHaveBeenCalledWith('t1');
     expect(el.textContent).toContain(
@@ -47,7 +47,7 @@ describe('ItemTypesPage', () => {
   });
 
   it('eliminar con éxito recarga la lista', async () => {
-    const { remove, catalog } = await setup(Promise.resolve());
+    const { remove, catalog } = await setup(() => Promise.resolve());
     await remove();
     expect(catalog.allItemTypes).toHaveBeenCalledTimes(2);
   });

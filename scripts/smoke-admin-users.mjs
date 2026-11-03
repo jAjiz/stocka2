@@ -1,9 +1,9 @@
 // Prueba de humo de la Edge Function admin-users contra Supabase local.
-// Requiere `npm run db:reset` antes (usa los usuarios del seed). Sale con 1 si algo falla.
+// Requiere `pnpm db:reset` antes (usa los usuarios del seed). Sale con 1 si algo falla.
 import { execSync } from 'node:child_process';
 import { createClient } from '@supabase/supabase-js';
 
-const raw = execSync('npx supabase status -o json', { encoding: 'utf8' });
+const raw = execSync('pnpm exec supabase status -o json', { encoding: 'utf8' });
 const status = JSON.parse(raw.slice(raw.indexOf('{')));
 const URL = status.API_URL;
 const ANON = status.ANON_KEY;
