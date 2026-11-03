@@ -45,6 +45,8 @@ import { AuthService } from '../core/auth.service';
     }
     .bottom-nav a {
       flex: 1;
+      min-width: 0;
+      text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -71,10 +73,6 @@ import { AuthService } from '../core/auth.service';
       display: flex;
       flex-direction: column;
       height: 100%;
-    }
-    .user {
-      padding: 16px;
-      font: var(--mat-sys-title-small);
     }
     main.desktop {
       padding: 24px;
@@ -120,6 +118,12 @@ import { AuthService } from '../core/auth.service';
           <a routerLink="/historial" routerLinkActive="active">
             <mat-icon>history</mat-icon>Historial
           </a>
+          <a routerLink="/perfil" routerLinkActive="active"> <mat-icon>person</mat-icon>Perfil </a>
+          @if (auth.isAdmin()) {
+            <a routerLink="/admin" routerLinkActive="active">
+              <mat-icon>admin_panel_settings</mat-icon>Administración
+            </a>
+          }
         </nav>
       </div>
     } @else {
@@ -145,9 +149,21 @@ import { AuthService } from '../core/auth.service';
                 <mat-icon matListItemIcon>history</mat-icon>
                 <span matListItemTitle>Historial</span>
               </a>
+              @if (auth.isAdmin()) {
+                <a mat-list-item routerLink="/admin" routerLinkActive="active">
+                  <mat-icon matListItemIcon>admin_panel_settings</mat-icon>
+                  <span matListItemTitle>Administración</span>
+                </a>
+              }
             </mat-nav-list>
             <span class="spacer"></span>
-            <div class="user">{{ auth.profile()?.displayName }}</div>
+            <mat-nav-list>
+              <a mat-list-item routerLink="/perfil" routerLinkActive="active">
+                <mat-icon matListItemIcon>person</mat-icon>
+                <span matListItemTitle>{{ auth.profile()?.displayName }}</span>
+                <span matListItemLine>Perfil</span>
+              </a>
+            </mat-nav-list>
             <button mat-button type="button" (click)="signOut()">Cerrar sesión</button>
           </div>
         </mat-sidenav>

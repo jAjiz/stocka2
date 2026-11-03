@@ -4,7 +4,7 @@ import { provideRouter, Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { ShellComponent } from './shell.component';
 
-function setup(opts: { loadError?: boolean } = {}) {
+function setup(opts: { loadError?: boolean; admin?: boolean } = {}) {
   const session = signal<unknown>({ user: { id: 'u1' } });
   const loadError = signal(!!opts.loadError);
   const retry = vi.fn(async () => loadError.set(false));
@@ -13,6 +13,7 @@ function setup(opts: { loadError?: boolean } = {}) {
     loadError,
     retry,
     profile: signal({ id: 'u1', displayName: 'Furgo 1', role: 'user', active: true }),
+    isAdmin: signal(!!opts.admin),
     signOut: vi.fn(async () => session.set(null)),
   };
   TestBed.configureTestingModule({
@@ -49,5 +50,18 @@ describe('ShellComponent', () => {
     s.fixture.detectChanges();
     await s.fixture.whenStable();
     expect(s.navigate).toHaveBeenCalledWith('/login');
+  });
+
+  it('Perfil siempre; Administración solo para administradores', () => {
+    const user = setup();
+    let text = (user.fixture.nativeElement as HTMLElement).textContent;
+    expect(text).toContain('Perfil');
+    expect(text).not.toContain('Administración');
+
+    TestBed.resetTestingModule();
+    const admin = setup({ admin: true });
+    text = (admin.fixture.nativeElement as HTMLElement).textContent;
+    expect(text).toContain('Perfil');
+    expect(text).toContain('Administración');
   });
 });
