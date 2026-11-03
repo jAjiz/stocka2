@@ -7,6 +7,7 @@ const TABS = [
   { path: 'localizaciones', label: 'Localizaciones' },
   { path: 'articulos', label: 'Artículos' },
   { path: 'tipos', label: 'Tipos' },
+  { path: 'avisos', label: 'Avisos' },
 ];
 
 @Component({

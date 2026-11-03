@@ -104,6 +104,9 @@ export interface CatalogRow {
           }
         </div>
         <button mat-button type="button" (click)="edit.emit(r.id)">Editar</button>
+        @if (duplicable()) {
+          <button mat-button type="button" (click)="duplicate.emit(r.id)">Duplicar</button>
+        }
         <button mat-button type="button" (click)="toggle.emit(r.id)">
           {{ r.active ? 'Deshabilitar' : 'Habilitar' }}
         </button>
@@ -120,9 +123,12 @@ export class CatalogListComponent {
   /** "Deshabilitada" o "Deshabilitado". */
   readonly inactiveLabel = input('Deshabilitado');
   readonly error = input<string | null>(null);
+  /** Muestra la acción "Duplicar" en cada fila. */
+  readonly duplicable = input(false);
 
   readonly add = output<void>();
   readonly edit = output<string>();
+  readonly duplicate = output<string>();
   readonly toggle = output<string>();
   readonly remove = output<string>();
 
