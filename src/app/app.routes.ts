@@ -45,6 +45,20 @@ export const routes: Routes = [
             path: 'usuarios',
             loadComponent: () => import('./features/admin/users.page').then((m) => m.UsersPage),
           },
+          {
+            path: 'localizaciones',
+            loadComponent: () =>
+              import('./features/admin/locations.page').then((m) => m.LocationsPage),
+          },
+          {
+            path: 'articulos',
+            loadComponent: () => import('./features/admin/items.page').then((m) => m.ItemsPage),
+          },
+          {
+            path: 'tipos',
+            loadComponent: () =>
+              import('./features/admin/item-types.page').then((m) => m.ItemTypesPage),
+          },
         ],
       },
     ],
