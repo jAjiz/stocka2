@@ -4,6 +4,7 @@ import { Profile } from '../data/models';
 import { SUPABASE } from './supabase';
 
 const NETWORK_ERROR = 'Sin conexión. Inténtalo de nuevo.';
+const INVALID_LINK = 'El enlace no es válido o ha caducado. Pide uno nuevo al administrador.';
 
 /** Fallo de red (sin respuesta del servidor), no un rechazo de credenciales. */
 function isNetworkError(e: unknown): boolean {
@@ -69,16 +70,45 @@ export class AuthService {
       throw new Error(isNetworkError(e) ? NETWORK_ERROR : 'Correo o contraseña incorrectos.');
     }
     if (!session) throw new Error('Correo o contraseña incorrectos.');
+    await this.enter(session);
+  }
+
+  /** Canjea el token de un enlace de acceso (invitación o recuperación) y abre sesión. */
+  async acceptLink(tokenHash: string): Promise<void> {
+    let session: Session | null;
     try {
-      await this.establish(session);
+      const { data, error } = await this.supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: 'recovery',
+      });
+      if (error) throw error;
+      session = data.session;
     } catch (e) {
-      await this.signOut();
-      throw new Error(
-        e instanceof InactiveUserError
-          ? 'Tu usuario está desactivado. Habla con el administrador.'
-          : 'Ha ocurrido un error inesperado. Inténtalo de nuevo.',
-      );
+      throw new Error(isNetworkError(e) ? NETWORK_ERROR : INVALID_LINK);
     }
+    if (!session) throw new Error(INVALID_LINK);
+    await this.enter(session);
+  }
+
+  async setPassword(password: string): Promise<void> {
+    let code: string | null;
+    try {
+      const { error } = await this.supabase.auth.updateUser({ password });
+      code = error ? ((error as { code?: string }).code ?? 'unknown') : null;
+    } catch {
+      code = 'unknown';
+    }
+    if (code === 'same_password') {
+      throw new Error('La nueva contraseña tiene que ser distinta de la actual.');
+    }
+    if (code) throw new Error('No se ha podido cambiar la contraseña. Inténtalo de nuevo.');
+  }
+
+  /** Cambia el nombre visible propio. Los errores de la RPC se propagan (dbErrorMessage). */
+  async updateDisplayName(name: string): Promise<void> {
+    const { error } = await this.supabase.rpc('update_my_profile', { p_display_name: name });
+    if (error) throw error;
+    this.profile.update((p) => (p ? { ...p, displayName: name.trim() } : p));
   }
 
   /** Reintenta cargar perfil y permisos de la sesión guardada (estado loadError). */
@@ -101,6 +131,20 @@ export class AuthService {
     this.profile.set(null);
     this.permittedLocationIds.set(new Set());
     this.loadError.set(false);
+  }
+
+  /** Sesión recién abierta (login o enlace): si no se puede cargar el perfil, se cierra. */
+  private async enter(session: Session): Promise<void> {
+    try {
+      await this.establish(session);
+    } catch (e) {
+      await this.signOut();
+      throw new Error(
+        e instanceof InactiveUserError
+          ? 'Tu usuario está desactivado. Habla con el administrador.'
+          : 'Ha ocurrido un error inesperado. Inténtalo de nuevo.',
+      );
+    }
   }
 
   /**

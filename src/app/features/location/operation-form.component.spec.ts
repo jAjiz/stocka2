@@ -55,7 +55,16 @@ async function setup(preselect = true) {
   fixture.detectChanges();
   const button = () =>
     fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
-  return { fixture, perform, close, open, button, byLocation, resolve: (v: string) => resolve(v), reject: (e: unknown) => reject(e) };
+  return {
+    fixture,
+    perform,
+    close,
+    open,
+    button,
+    byLocation,
+    resolve: (v: string) => resolve(v),
+    reject: (e: unknown) => reject(e),
+  };
 }
 
 describe('OperationFormComponent', () => {

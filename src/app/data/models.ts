@@ -66,3 +66,30 @@ export interface OperationInput {
   /** Id generado por el cliente una vez por operación: hace idempotentes los reintentos. */
   operationId?: string;
 }
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  displayName: string;
+  role: Profile['role'];
+  active: boolean;
+  locationIds: string[];
+  /** false: aún no ha creado su contraseña (invitación pendiente). */
+  hasPassword: boolean;
+}
+
+export interface UserInput {
+  displayName: string;
+  role: Profile['role'];
+  locationIds: string[];
+}
+
+export interface InviteInput extends UserInput {
+  email: string;
+}
+
+/** Enlace de acceso (invitación o recuperación) que el administrador comparte a mano. */
+export interface AccessLink {
+  url: string;
+  expiresAt: Date;
+}
