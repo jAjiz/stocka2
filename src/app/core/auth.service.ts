@@ -183,6 +183,8 @@ export class AuthService {
     this.permittedLocationIds.set(loaded.permitted);
     this.session.set(session);
     this.loadError.set(false);
+    // Reasocia la suscripción de este dispositivo con el usuario actual (sin esperar).
+    void this.push.syncDevice();
   }
 
   private async loadUserData(

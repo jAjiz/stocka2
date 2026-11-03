@@ -117,6 +117,27 @@ describe('PushService', () => {
     expect(swPush.unsubscribe).toHaveBeenCalled();
   });
 
+  it('syncDevice vuelve a registrar la suscripción existente', async () => {
+    const { push, rpc } = setup({ subscription: fakeSubscription() });
+    await push.syncDevice();
+    expect(rpc).toHaveBeenCalledWith(
+      'save_push_subscription',
+      expect.objectContaining({ p_endpoint: 'https://push.example/abc', p_p256dh: 'P256' }),
+    );
+  });
+
+  it('syncDevice sin suscripción no llama a la RPC', async () => {
+    const { push, rpc } = setup();
+    await push.syncDevice();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('syncDevice nunca rechaza, aunque falle la RPC', async () => {
+    const { push, rpc } = setup({ subscription: fakeSubscription() });
+    rpc.mockRejectedValue(new Error('sin red'));
+    await expect(push.syncDevice()).resolves.toBeUndefined();
+  });
+
   it('forgetDevice borra la suscripción aunque la señal aún no se haya poblado', async () => {
     const { push, rpc, swPush } = setup();
     // El observable de SwPush todavía no ha emitido cuando se cierra sesión.

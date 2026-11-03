@@ -65,7 +65,10 @@ function setup(opts: FakeOpts = {}) {
       }),
     }),
   };
-  const push = { forgetDevice: vi.fn().mockResolvedValue(undefined) };
+  const push = {
+    forgetDevice: vi.fn().mockResolvedValue(undefined),
+    syncDevice: vi.fn().mockResolvedValue(undefined),
+  };
   TestBed.configureTestingModule({
     providers: [
       { provide: SUPABASE, useValue: fake },
@@ -91,6 +94,13 @@ describe('AuthService', () => {
     expect(auth.session()).not.toBeNull();
     expect(auth.profile()?.displayName).toBe('Furgo 1');
     expect(auth.canOperate('l1')).toBe(true);
+  });
+
+  it('signIn correcto vuelve a registrar la suscripción del dispositivo', async () => {
+    const { auth, push } = setup();
+    await auth.ready;
+    await auth.signIn('a@b.c', 'x');
+    expect(push.syncDevice).toHaveBeenCalled();
   });
 
   it('signIn con usuario inactivo lanza y cierra sesión', async () => {

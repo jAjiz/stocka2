@@ -93,18 +93,45 @@ export class PushService {
   }
 
   /**
+   * Vuelve a registrar la suscripción del navegador a nombre del usuario actual. Se llama tras
+   * abrir o restaurar la sesión: si la anterior terminó sin cerrar sesión, la fila del servidor
+   * seguiría siendo del usuario previo. Nunca lanza.
+   */
+  async syncDevice(): Promise<void> {
+    try {
+      const sub = await this.currentSubscription();
+      if (!sub) return;
+      const keys = sub.toJSON().keys ?? {};
+      await this.supabase.rpc('save_push_subscription', {
+        p_endpoint: sub.endpoint,
+        p_p256dh: keys['p256dh'] ?? '',
+        p_auth: keys['auth'] ?? '',
+        p_user_agent: navigator.userAgent,
+      });
+    } catch {
+      // es un reintento oportunista: un fallo no debe afectar al inicio de sesión
+    }
+  }
+
+  /** Suscripción actual del navegador, o null (con la señal aún vacía espera hasta 2 s). */
+  private async currentSubscription(): Promise<PushSubscription | null> {
+    let sub = this.subscription();
+    if (!sub && this.swPush.isEnabled) {
+      // La señal aún puede estar vacía si se consulta nada más cargar.
+      sub = await firstValueFrom(this.swPush.subscription.pipe(timeout(2000)), {
+        defaultValue: null,
+      }).catch(() => null);
+    }
+    return sub;
+  }
+
+  /**
    * Como disable, pero nunca lanza y siempre intenta soltar la suscripción del navegador aunque
    * falle el servidor: se usa al cerrar sesión, y en un móvil compartido el usuario anterior no
    * debe seguir recibiendo avisos.
    */
   async forgetDevice(): Promise<void> {
-    let sub = this.subscription();
-    if (!sub && this.swPush.isEnabled) {
-      // La señal aún puede estar vacía si se cierra sesión nada más cargar.
-      sub = await firstValueFrom(this.swPush.subscription.pipe(timeout(2000)), {
-        defaultValue: null,
-      }).catch(() => null);
-    }
+    const sub = await this.currentSubscription();
     if (!sub) return;
     try {
       await this.supabase

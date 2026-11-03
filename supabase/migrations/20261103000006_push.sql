@@ -139,7 +139,8 @@ begin
     perform net.http_post(
       url := v_url,
       body := '{}'::jsonb,
-      headers := '{"Content-Type":"application/json"}'::jsonb);
+      headers := '{"Content-Type":"application/json"}'::jsonb,
+      timeout_milliseconds := 30000);
   end if;
 end $$;
 
@@ -155,6 +156,11 @@ as $$
 begin
   -- Limpieza: filas enviadas hace más de 30 días.
   delete from public.push_outbox o where o.sent_at < now() - interval '30 days';
+
+  -- Pendientes de hace más de 1 hora: se descartan sin enviar (un "quedan 1" tardío, tras una
+  -- reposición, confundiría).
+  update public.push_outbox o set sent_at = now()
+  where o.sent_at is null and o.created_at < now() - interval '1 hour';
 
   return query
   update public.push_outbox o

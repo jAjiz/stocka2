@@ -3,7 +3,7 @@ begin;
 select tests.clear_seed();
 -- Sin secreto en Vault salvo donde se indique (el seed crea stocka2_push_url).
 delete from vault.secrets where name = 'stocka2_push_url';
-select plan(31);
+select plan(33);
 
 select tests.create_user('admin@stocka2.test', 'admin') as a \gset
 select tests.create_user('u1@stocka2.test') as u1 \gset
@@ -199,6 +199,17 @@ select is((select count(*)::int from public.claim_push_outbox()), :'pending'::in
   'service_role reclama las pendientes');
 select is((select count(*)::int from public.claim_push_outbox()), 0, 'segunda llamada: 0 filas');
 reset role;
+
+-- Filas pendientes de hace más de 1 hora: se descartan sin devolverlas.
+insert into public.push_outbox (operation_id, user_id, title, body, url, created_at)
+values (:'op_move', :'u1', 'vieja', 'b', '/', now() - interval '2 hours'),
+       (:'op_move', :'u1', 'fresca', 'b', '/', now());
+set local role service_role;
+select results_eq($$select title from public.claim_push_outbox()$$, $$values ('fresca')$$,
+  'claim_push_outbox solo devuelve las pendientes recientes');
+reset role;
+select isnt((select sent_at from public.push_outbox where title = 'vieja'), null,
+  'la pendiente de hace 2 horas se descarta (sent_at asignado)');
 
 select * from finish();
 rollback;

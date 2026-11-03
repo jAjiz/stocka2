@@ -308,3 +308,9 @@ Desviaciones respecto al plan, decididas al implementar:
 - **Pruebas pgTAP:** `tests.clear_seed()` vacía también las tablas de reglas y de push.
 - **Iconos de la PWA:** son los de `ng add @angular/pwa` (provisionales).
 - **Comando de pruebas:** es `pnpm test --watch=false`.
+
+### Revisión de la rama
+
+Corregido tras la revisión: tras iniciar sesión, abrir un enlace o restaurar la sesión, `PushService.syncDevice` vuelve a registrar la suscripción del navegador a nombre del usuario actual (si una sesión terminaba sin `signOut`, los avisos del usuario anterior seguían llegando a este dispositivo); `claim_push_outbox` descarta las pendientes de más de 1 hora en lugar de enviarlas tarde; `net.http_post` lleva un timeout explícito de 30 s; `docs/deployment.md` aclara que la sustitución de la clave VAPID llega con el plan 4, que rotar las claves exige vaciar `push_subscriptions` y que el secreto `stocka2_push_url` se crea en la misma sesión que `db push`.
+
+Pendiente para el plan 4: aceptar solo endpoints https en `save_push_subscription` (y `redirect: 'manual'` en `send-push`), gestionar actualizaciones del service worker con `SwUpdate`, y el recorrido manual con push real en Chrome/Android/iOS.

@@ -41,7 +41,8 @@ El par VAPID del repositorio es solo de desarrollo. Para producción:
    ```
 
 3. La clave pública sustituye a `__VAPID_PUBLIC_KEY__` en `src/environments/environment.ts`
-   durante el build de producción.
+   durante el build de producción. Esa sustitución llega con el plan 4: hasta entonces un
+   build de producción no puede activar las notificaciones.
 4. Despliega la función: `pnpm exec supabase functions deploy send-push` (`verify_jwt = false`
    ya está en `supabase/config.toml`: la llama `pg_net` sin JWT).
 5. En el SQL editor, guarda la URL que llama `perform_operation`:
@@ -50,7 +51,12 @@ El par VAPID del repositorio es solo de desarrollo. Para producción:
    select vault.create_secret('https://<ref>.supabase.co/functions/v1/send-push', 'stocka2_push_url');
    ```
 
-   Sin ese secreto los avisos se encolan en `push_outbox` pero no se envían.
+   Hazlo en la misma sesión que `supabase db push`. Sin ese secreto los avisos se encolan en
+   `push_outbox` pero no se envían.
+
+Rotar las claves VAPID invalida todas las suscripciones existentes (los servicios push
+responden 403). Tras rotarlas, ejecuta `truncate public.push_subscriptions;` y los usuarios
+tienen que volver a activar las notificaciones en su perfil.
 
 ## Primer administrador
 
