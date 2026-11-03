@@ -38,7 +38,8 @@ end $$;
 create or replace function tests.clear_seed()
 returns void language plpgsql as $$
 begin
-  truncate public.operation_lines, public.operations, public.stock,
+  truncate public.alert_rule_locations, public.alert_rule_items, public.alert_rules,
+           public.operation_lines, public.operations, public.stock,
            public.location_permissions, public.items, public.item_types, public.locations;
   delete from public.profiles;
   delete from auth.identities;
