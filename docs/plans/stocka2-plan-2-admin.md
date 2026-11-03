@@ -1,14 +1,12 @@
 # stocka2 — Plan 2: Administración (usuarios, enlaces de acceso, catálogo y perfil)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Un área de administración (solo administradores) para invitar y gestionar usuarios con enlaces de acceso que se comparten a mano, y para mantener localizaciones, tipos y artículos; más la página de perfil y la pantalla de crear contraseña.
 
 **Architecture:** Las escrituras de catálogo y de perfiles son RPC `security definer` que comprueban `is_admin()` y aplican las reglas de deshabilitar/eliminar con bloqueos de fila. Lo que necesita la clave de servicio (crear usuarios de Auth, generar enlaces, banear) vive en una única Edge Function `admin-users`, que comprueba que quien llama es administrador con su propio JWT y delega en las RPC las reglas de negocio. Los enlaces apuntan a la propia aplicación (`/acceso?t=<token_hash>`) y la SPA canjea el token con `verifyOtp`, de modo que la vista previa de WhatsApp no lo consume. RLS exige además un perfil activo para leer, así que un JWT de un usuario desactivado deja de leer datos al instante.
 
 **Tech Stack:** Angular 22 (standalone, signals, zoneless, Vitest), Angular Material + CDK, `@supabase/supabase-js` v2, Supabase CLI, Postgres + pgTAP, Edge Functions (Deno, `npm:@supabase/supabase-js@2`).
 
-**Spec:** `docs/superpowers/specs/2026-11-02-stocka2-design.md` (§4, §5 y §8 puntos 1, 6 y 7). Plan anterior: `docs/superpowers/plans/2026-11-02-stocka2-plan-1-base.md`.
+**Spec:** `docs/specs/stocka2-design.md` (§4, §5 y §8 puntos 1, 6 y 7). Plan anterior: `docs/plans/stocka2-plan-1-base.md`.
 
 **Fuera de este plan:** reglas de aviso y activación de notificaciones en el perfil (plan 3), importación (plan 4).
 

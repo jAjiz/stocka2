@@ -1,0 +1,30 @@
+# Roadmap
+
+El diseño completo está en [docs/specs/stocka2-design.md](docs/specs/stocka2-design.md) y
+cada plan en [docs/plans](docs/plans).
+
+## Completado
+
+### Plan 1 — Base
+
+Autenticación, esquema con RLS y funciones `perform_operation`, `create_item` y
+`search_operations`, shell responsive, inicio, página de localización con sus operaciones,
+stock global e historial con filtros.
+
+### Plan 2 — Administración
+
+Área solo para administradores con usuarios (invitar con nombre, rol y permisos; enlace de
+acceso con botones Copiar y Compartir; regenerar enlace para recuperar la contraseña; editar
+rol y permisos; desactivar, que además banea al usuario en Auth), localizaciones, tipos y
+artículos (alta, edición, deshabilitar solo sin stock y eliminar solo sin historial); pantalla
+`/acceso` para crear la contraseña desde el enlace y página de perfil (nombre visible y
+contraseña). RLS exige un perfil activo para leer.
+
+Verificado: 201 pruebas pgTAP, 117 pruebas Vitest, prueba de humo de la Edge Function
+(`pnpm test:functions`, 21 comprobaciones), `ng build` sin avisos y recorrido manual de la
+invitación a 1280 px y del área de administración a 375 px.
+
+## Pendiente
+
+- **Plan 3 — Avisos y notificaciones push** con PWA.
+- **Plan 4 — Importación CSV/Excel y despliegue** en Cloudflare.

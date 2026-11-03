@@ -1,14 +1,12 @@
 # stocka2 — Plan 1: Base (esquema, operaciones, localizaciones e historial)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Una aplicación usable con login, páginas de localización con las cuatro operaciones multi-artículo, stock global e historial filtrable, con todas las reglas de integridad y permisos impuestas en la base de datos.
 
 **Architecture:** SPA Angular sin backend propio que habla directamente con Supabase. Toda escritura de stock pasa por una función SQL `perform_operation` (security definer, atómica, con bloqueo de filas). Las tablas solo se leen desde el cliente: RLS no permite escribir directamente. Los usuarios del primer arranque se crean con el seed local. La administración llega en el plan 2.
 
 **Tech Stack:** Angular 22 (standalone, signals, zoneless, Vitest), Angular Material + CDK, `@supabase/supabase-js` v2, Supabase CLI (paquete npm `supabase`, ejecutado con `npx supabase`), Postgres + pgTAP (`supabase test db`).
 
-**Spec:** `docs/superpowers/specs/2026-11-02-stocka2-design.md`
+**Spec:** `docs/specs/stocka2-design.md`
 
 **Planes siguientes (fuera de este plan):** 2 Administración (usuarios, enlaces de acceso, CRUD de localizaciones, artículos y tipos), 3 Avisos y push con la PWA, 4 Importación CSV/Excel y despliegue en Cloudflare.
 

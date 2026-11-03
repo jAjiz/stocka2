@@ -13,6 +13,7 @@
     "test:functions": "node scripts/smoke-admin-users.mjs"
   },
   "private": true,
+  "license": "MIT",
   "packageManager": "pnpm@11.4.0",
   "dependencies": {
     "@angular/cdk": "^22.2.5",
