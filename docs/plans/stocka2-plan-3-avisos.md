@@ -293,3 +293,18 @@ src/
 - [ ] **Step 2:** Recorrido manual con `pnpm serve:pwa` en Chrome a 375 px y 1280 px: como admin crear, duplicar, deshabilitar y eliminar reglas; ver en inicio y en Furgoneta 1 los avisos de la regla del seed; activar notificaciones en el perfil como furgo1; registrar una salida que deje un artículo en grave → llega una notificación con artículo, localización, cantidad y umbral, y al pulsarla se abre Furgoneta 1; reponer y volver a bajar → llega otra; cerrar sesión → no llegan más a ese navegador; instalar la PWA desde Chrome.
 - [ ] **Step 3:** `ROADMAP.md`: mover el plan 3 a "Completado" con los recuentos de pruebas; `README.md` si cambia la lista de funcionalidades.
 - [ ] **Step 4: Commit** `docs: estado tras plan 3`
+
+---
+
+## Notas de ejecución (2026-11-03)
+
+Desviaciones respecto al plan, decididas al implementar:
+
+- **Cifrado en `send-push`:** cifra con `generateRequestDetails` de `web-push` y envía con `fetch`, porque `sendNotification` usa `https` de Node y falla con endpoints `http://` en Deno.
+- **Contenedores locales:** `host.docker.internal` funciona desde ellos; el seed no cambió.
+- **Reglas con elementos deshabilitados:** editar o duplicar una regla conserva los artículos y localizaciones deshabilitados que ya tenía; la lista de reglas nombra las localizaciones deshabilitadas con "(deshabilitada)".
+- **Página de localización:** un fallo al cargar los avisos no bloquea el stock.
+- **Cerrar sesión:** siempre suelta la suscripción del navegador aunque falle la RPC, espera hasta 2 s a que `SwPush` emita la suscripción y no tarda más de 3 s.
+- **Pruebas pgTAP:** `tests.clear_seed()` vacía también las tablas de reglas y de push.
+- **Iconos de la PWA:** son los de `ng add @angular/pwa` (provisionales).
+- **Comando de pruebas:** es `pnpm test --watch=false`.

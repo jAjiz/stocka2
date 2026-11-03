@@ -11,6 +11,7 @@ inalterable de quién movió qué, cuánto y cuándo. Pensado para usarse desde 
 - Historial completo con filtros.
 - Usuarios por invitación, con roles y permisos por localización.
 - Administración de localizaciones, tipos y artículos.
+- Avisos de stock bajo (leve y grave) con notificaciones push y PWA instalable.
 - Interfaz responsive para móvil y ordenador, en castellano.
 
 ## Tecnologías
