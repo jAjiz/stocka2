@@ -22,9 +22,11 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { AuthService } from '../../core/auth.service';
 import { dbErrorMessage } from '../../core/db-errors';
+import { AlertsService } from '../../data/alerts.service';
 import { CatalogService } from '../../data/catalog.service';
-import { Item, ItemType, OperationKind, StockRow } from '../../data/models';
+import { Item, ItemType, OperationKind, StockAlert, StockRow } from '../../data/models';
 import { StockService } from '../../data/stock.service';
+import { AlertListComponent } from '../../shared/alert-list.component';
 import { normalizeText } from '../../shared/format';
 import { OperationFormComponent } from './operation-form.component';
 
@@ -41,6 +43,7 @@ interface Line {
   selector: 'app-location-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AlertListComponent,
     RouterLink,
     MatButtonModule,
     MatCardModule,
@@ -121,6 +124,13 @@ interface Line {
         <p class="error" role="alert">{{ error() }}</p>
       }
 
+      <app-alert-list
+        [alerts]="locationAlerts()"
+        [itemNames]="itemNames()"
+        [locationNames]="locationNames()"
+        [showLocation]="false"
+      />
+
       <div class="filters">
         <mat-form-field>
           <mat-label>Buscar</mat-label>
@@ -194,6 +204,7 @@ export class LocationPage {
   private readonly auth = inject(AuthService);
   private readonly catalog = inject(CatalogService);
   private readonly stockService = inject(StockService);
+  private readonly alertsService = inject(AlertsService);
   private readonly pending = inject(PendingTasks);
   private readonly dialog = inject(MatDialog);
 
@@ -223,6 +234,15 @@ export class LocationPage {
 
   private readonly items = signal<Item[]>([]);
   private readonly stock = signal<StockRow[]>([]);
+  private readonly alerts = signal<StockAlert[]>([]);
+
+  protected readonly itemNames = computed(() => new Map(this.items().map((i) => [i.id, i.name])));
+  protected readonly locationNames = computed(
+    () => new Map([[this.locationId(), this.locationName()]]),
+  );
+  protected readonly locationAlerts = computed(() =>
+    this.alerts().filter((a) => a.locationId === this.locationId()),
+  );
 
   private readonly lines = computed<Line[]>(() => {
     const items = new Map(this.items().map((i) => [i.id, i]));
@@ -305,17 +325,19 @@ export class LocationPage {
       this.locationName.set('');
       this.items.set([]);
       this.stock.set([]);
+      this.alerts.set([]);
     }
     if (!this.auth.canOperate(id)) {
       this.loaded.set(true);
       return;
     }
     try {
-      const [locations, types, items, stock] = await Promise.all([
+      const [locations, types, items, stock, alerts] = await Promise.all([
         this.catalog.locations(),
         this.catalog.itemTypes(),
         this.catalog.items(),
         this.stockService.byLocation(id),
+        this.alertsService.active(),
       ]);
       if (stale()) return;
       const location = locations.find((l) => l.id === id);
@@ -324,6 +346,7 @@ export class LocationPage {
       this.types.set(types);
       this.items.set(items);
       this.stock.set(stock);
+      this.alerts.set(alerts);
     } catch (e) {
       if (!stale()) this.error.set(dbErrorMessage(e));
     } finally {

@@ -10,6 +10,10 @@ describe('dbErrorMessage', () => {
     ['duplicate_name', 'Ya existe un artículo con ese nombre.'],
     ['inactive_type', 'El tipo de artículo está deshabilitado.'],
     ['invalid_input', 'Revisa los datos: hay campos vacíos o no válidos.'],
+    [
+      'invalid_thresholds',
+      'Indica al menos un umbral. Si pones los dos, el grave tiene que ser menor que el leve.',
+    ],
     ['not_found', 'No se ha encontrado el elemento. Recarga la página.'],
     ['duplicate_location', 'Ya existe una localización con ese nombre.'],
     ['duplicate_type', 'Ya existe un tipo con ese nombre.'],

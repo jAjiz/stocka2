@@ -4,9 +4,17 @@ import { signal } from '@angular/core';
 import { BehaviorSubject, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../core/auth.service';
+import { AlertsService } from '../../data/alerts.service';
 import { CatalogService } from '../../data/catalog.service';
 import { StockService } from '../../data/stock.service';
 import { LocationPage } from './location.page';
+
+const alertsFake = () => ({
+  active: vi.fn().mockResolvedValue([
+    { itemId: 'i1', locationId: 'l1', quantity: 0, level: 'critical', threshold: 1 },
+    { itemId: 'i2', locationId: 'otra', quantity: 0, level: 'warning', threshold: 3 },
+  ]),
+});
 
 async function setup(canOperate: boolean, id = 'l1') {
   const auth = { canOperate: () => canOperate, isAdmin: signal(false), ready: Promise.resolve() };
@@ -26,12 +34,14 @@ async function setup(canOperate: boolean, id = 'l1') {
       { itemId: 'i3', locationId: 'l1', quantity: 7 },
     ],
   };
+  const alerts = alertsFake();
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
       { provide: AuthService, useValue: auth },
       { provide: CatalogService, useValue: catalog },
       { provide: StockService, useValue: stock },
+      { provide: AlertsService, useValue: alerts },
       { provide: ActivatedRoute, useValue: { paramMap: of(new Map([['id', id]])) } },
     ],
   });
@@ -39,7 +49,7 @@ async function setup(canOperate: boolean, id = 'l1') {
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
-  return fixture;
+  return Object.assign(fixture, { alerts });
 }
 
 describe('LocationPage', () => {
@@ -68,6 +78,28 @@ describe('LocationPage', () => {
     for (const label of ['Añadir', 'Traer aquí', 'Baja', 'Salida por trabajo', 'Ver historial']) {
       expect(buttons).not.toContain(label);
     }
+  });
+
+  it('solo muestra los avisos de esa localización', async () => {
+    const f = await setup(true);
+    const rows = [...(f.nativeElement as HTMLElement).querySelectorAll('app-alert-list li')];
+    expect(rows.length).toBe(1);
+    expect(rows[0].textContent).toContain('Filtró de aire');
+    expect(rows[0].querySelector('a')).toBeNull();
+  });
+
+  it('tras una operación recarga los avisos', async () => {
+    const f = await setup(true);
+    vi.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+      afterClosed: () => of(true),
+    } as never);
+    expect(f.alerts.active).toHaveBeenCalledTimes(1);
+    const add = [...(f.nativeElement as HTMLElement).querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Añadir',
+    ) as HTMLButtonElement;
+    add.click();
+    await f.whenStable();
+    expect(f.alerts.active).toHaveBeenCalledTimes(2);
   });
 
   it('abre el formulario enfocando el título, no el buscador', async () => {
@@ -130,6 +162,7 @@ describe('LocationPage', () => {
           provide: StockService,
           useValue: { byLocation: (id: string) => (id === 'A' ? rowsA.promise : rowsB.promise) },
         },
+        { provide: AlertsService, useValue: { active: async () => [] } },
         { provide: ActivatedRoute, useValue: { paramMap: params } },
       ],
     });
