@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { isAuthRetryableFetchError, Session } from '@supabase/supabase-js';
 import { Profile } from '../data/models';
+import { PushService } from '../data/push.service';
 import { SUPABASE } from './supabase';
 
 const NETWORK_ERROR = 'Sin conexión. Inténtalo de nuevo.';
@@ -19,6 +20,7 @@ class InactiveUserError extends Error {}
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly supabase = inject(SUPABASE);
+  private readonly push = inject(PushService);
 
   readonly session = signal<Session | null>(null);
   readonly profile = signal<Profile | null>(null);
@@ -118,6 +120,8 @@ export class AuthService {
   }
 
   async signOut(): Promise<void> {
+    // Con la sesión aún válida, para que la RPC pueda borrar la suscripción del dispositivo.
+    await this.push.forgetDevice();
     try {
       await this.supabase.auth.signOut();
     } catch {

@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { AuthApiError, AuthRetryableFetchError } from '@supabase/supabase-js';
+import { PushService } from '../data/push.service';
 import { AuthService } from './auth.service';
 import { SUPABASE } from './supabase';
 
@@ -64,8 +65,14 @@ function setup(opts: FakeOpts = {}) {
       }),
     }),
   };
-  TestBed.configureTestingModule({ providers: [{ provide: SUPABASE, useValue: fake }] });
-  return { auth: TestBed.inject(AuthService), signOut, opts, fake };
+  const push = { forgetDevice: vi.fn().mockResolvedValue(undefined) };
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: SUPABASE, useValue: fake },
+      { provide: PushService, useValue: push },
+    ],
+  });
+  return { auth: TestBed.inject(AuthService), signOut, opts, fake, push };
 }
 
 const INACTIVE = 'Tu usuario está desactivado. Habla con el administrador.';
@@ -202,6 +209,16 @@ describe('AuthService', () => {
     expect(auth.session()).toBeNull();
     expect(auth.profile()).toBeNull();
     expect(auth.permittedLocationIds().size).toBe(0);
+  });
+
+  it('signOut olvida el dispositivo antes de cerrar la sesión', async () => {
+    const { auth, push, signOut } = setup({ restored: true });
+    await auth.ready;
+    await auth.signOut();
+    expect(push.forgetDevice).toHaveBeenCalled();
+    expect(push.forgetDevice.mock.invocationCallOrder[0]).toBeLessThan(
+      signOut.mock.invocationCallOrder[0],
+    );
   });
 
   it('acceptLink con un enlace caducado da el mensaje de enlace no válido', async () => {

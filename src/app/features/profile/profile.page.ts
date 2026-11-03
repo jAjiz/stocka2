@@ -13,9 +13,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../../core/auth.service';
 import { dbErrorMessage } from '../../core/db-errors';
+import { PushService } from '../../data/push.service';
 import { PasswordFormComponent } from '../../shared/password-form.component';
 
-/** Perfil: nombre visible y contraseña. Las notificaciones llegan en el plan 3. */
+/** Perfil: nombre visible, contraseña y notificaciones push de este dispositivo. */
 @Component({
   selector: 'app-profile-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -81,11 +82,50 @@ import { PasswordFormComponent } from '../../shared/password-form.component';
         <app-password-form [busy]="savingPassword()" (submitted)="savePassword($event)" />
       </mat-card-content>
     </mat-card>
+    <mat-card appearance="outlined">
+      <mat-card-header><mat-card-title>Notificaciones</mat-card-title></mat-card-header>
+      <mat-card-content>
+        @switch (push.status()) {
+          @case ('off') {
+            <p>Recibe un aviso en este dispositivo cuando un artículo llegue a nivel grave.</p>
+            <button mat-flat-button type="button" (click)="enablePush()">
+              Activar notificaciones
+            </button>
+          }
+          @case ('on') {
+            <p>Las notificaciones están activadas en este dispositivo.</p>
+            <button mat-stroked-button type="button" (click)="disablePush()">Desactivar</button>
+          }
+          @case ('busy') {
+            <p>Un momento…</p>
+          }
+          @case ('denied') {
+            <p>
+              Has bloqueado las notificaciones. Actívalas en los ajustes del navegador para esta
+              web.
+            </p>
+          }
+          @case ('ios-install') {
+            <p>
+              En iPhone las notificaciones solo funcionan con la aplicación instalada: pulsa
+              Compartir, «Añadir a pantalla de inicio» y ábrela desde allí (iOS 16.4 o posterior).
+            </p>
+          }
+          @default {
+            <p>Este navegador no admite notificaciones.</p>
+          }
+        }
+        @if (pushError()) {
+          <p class="error" role="alert">{{ pushError() }}</p>
+        }
+      </mat-card-content>
+    </mat-card>
   `,
 })
 export class ProfilePage {
   private readonly auth = inject(AuthService);
   private readonly snackBar = inject(MatSnackBar);
+  protected readonly push = inject(PushService);
 
   protected readonly email = computed(() => this.auth.session()?.user.email ?? '');
   protected readonly name = signal(this.auth.profile()?.displayName ?? '');
@@ -93,6 +133,7 @@ export class ProfilePage {
   protected readonly nameError = signal<string | null>(null);
   protected readonly savingPassword = signal(false);
   protected readonly passwordError = signal<string | null>(null);
+  protected readonly pushError = signal<string | null>(null);
   private readonly passwordForm = viewChild.required(PasswordFormComponent);
 
   protected async saveName(event: Event): Promise<void> {
@@ -124,6 +165,28 @@ export class ProfilePage {
       this.passwordError.set((e as Error).message);
     } finally {
       this.savingPassword.set(false);
+    }
+  }
+
+  protected async enablePush(): Promise<void> {
+    this.pushError.set(null);
+    try {
+      await this.push.enable();
+      if (this.push.status() === 'on') {
+        this.snackBar.open('Notificaciones activadas', undefined, { duration: 3000 });
+      }
+    } catch (e) {
+      this.pushError.set(dbErrorMessage(e));
+    }
+  }
+
+  protected async disablePush(): Promise<void> {
+    this.pushError.set(null);
+    try {
+      await this.push.disable();
+      this.snackBar.open('Notificaciones desactivadas', undefined, { duration: 3000 });
+    } catch (e) {
+      this.pushError.set(dbErrorMessage(e));
     }
   }
 }

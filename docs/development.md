@@ -16,6 +16,7 @@ pnpm db:reset        # reinicia la base de datos local (migraciones + seed)
 pnpm db:test         # pruebas de base de datos (supabase test db)
 pnpm test:functions  # pruebas de humo de las Edge Functions admin-users y send-push (tras db:reset)
 pnpm ng build        # compilación
+pnpm serve:pwa       # build de producción con claves de desarrollo en http://localhost:4300 (service worker y push)
 ```
 
 `pnpm exec supabase status` muestra la URL y las claves locales. Los valores de
@@ -47,8 +48,9 @@ http://127.0.0.1:54321/functions/v1/send-push` (no necesita JWT).
   servicio de push falso de `scripts/smoke-push.mjs` (escucha en `0.0.0.0:54399` y los
   contenedores lo alcanzan como `host.docker.internal`).
 - El service worker de Angular solo se registra en un build de producción, así que para recibir
-  notificaciones en el navegador hay que servir ese build (`pnpm ng build` y un servidor
-  estático); con `pnpm start` no hay push.
+  notificaciones en el navegador hay que servir ese build: `pnpm serve:pwa` lo compila con las
+  claves de desarrollo (configuración `local`) y lo sirve en `http://localhost:4300`
+  (localhost es un contexto seguro, así que el push funciona). Con `pnpm start` no hay push.
 
 ## Datos y usuarios de desarrollo
 
@@ -56,10 +58,10 @@ http://127.0.0.1:54321/functions/v1/send-push` (no necesita JWT).
 Furgoneta 2), 3 tipos, 8 artículos con stock inicial en Taller (mediante operaciones
 `add`) y estos usuarios. La contraseña es `stocka2-dev` (solo desarrollo, nunca en producción).
 
-| Email                  | Rol   | Permisos                       |
-| ---------------------- | ----- | ------------------------------ |
-| `admin@stocka2.test`   | admin | todas las localizaciones       |
-| `furgo1@stocka2.test`  | user  | operar en Furgoneta 1          |
+| Email                 | Rol   | Permisos                 |
+| --------------------- | ----- | ------------------------ |
+| `admin@stocka2.test`  | admin | todas las localizaciones |
+| `furgo1@stocka2.test` | user  | operar en Furgoneta 1    |
 
 Las pruebas de BD (`pnpm db:test`) vacían estos datos dentro de su transacción
 (`tests.clear_seed()`), así que no los alteran.
