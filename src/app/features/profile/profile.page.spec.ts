@@ -1,16 +1,27 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '../../core/auth.service';
+import { PushService, PushStatus } from '../../data/push.service';
 import { ProfilePage } from './profile.page';
 
-async function setup() {
+async function setup(status: PushStatus = 'off') {
   const auth = {
     profile: signal({ id: 'u1', displayName: 'Juan', role: 'user', active: true }),
     session: signal({ user: { email: 'juan@x.es' } }),
     updateDisplayName: vi.fn().mockResolvedValue(undefined),
     setPassword: vi.fn().mockResolvedValue(undefined),
   };
-  TestBed.configureTestingModule({ providers: [{ provide: AuthService, useValue: auth }] });
+  const push = {
+    status: signal<PushStatus>(status),
+    enable: vi.fn().mockResolvedValue(undefined),
+    disable: vi.fn().mockResolvedValue(undefined),
+  };
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: AuthService, useValue: auth },
+      { provide: PushService, useValue: push },
+    ],
+  });
   const fixture = TestBed.createComponent(ProfilePage);
   fixture.detectChanges();
   await fixture.whenStable();
@@ -24,7 +35,7 @@ async function setup() {
     nameInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
   };
-  return { fixture, el, auth, nameInput, saveName, setName };
+  return { fixture, el, auth, push, nameInput, saveName, setName };
 }
 
 describe('ProfilePage', () => {
@@ -63,5 +74,33 @@ describe('ProfilePage', () => {
     fixture.detectChanges();
     expect(pw.value).toBe('');
     expect(repeat.value).toBe('');
+  });
+
+  it('con las notificaciones desactivadas, "Activar notificaciones" las activa', async () => {
+    const { el, push, fixture } = await setup('off');
+    const btn = [...el.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Activar notificaciones',
+    ) as HTMLButtonElement;
+    btn.click();
+    await fixture.whenStable();
+    expect(push.enable).toHaveBeenCalled();
+  });
+
+  it('con las notificaciones activadas, "Desactivar" las desactiva', async () => {
+    const { el, push, fixture } = await setup('on');
+    const btn = [...el.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Desactivar',
+    ) as HTMLButtonElement;
+    btn.click();
+    await fixture.whenStable();
+    expect(push.disable).toHaveBeenCalled();
+  });
+
+  it('en iPhone sin instalar explica cómo instalar y no hay botón', async () => {
+    const { el } = await setup('ios-install');
+    expect(el.textContent).toContain('Añadir a pantalla de inicio');
+    const labels = [...el.querySelectorAll('button')].map((b) => b.textContent?.trim());
+    expect(labels).not.toContain('Activar notificaciones');
+    expect(labels).not.toContain('Desactivar');
   });
 });

@@ -29,6 +29,35 @@ primer administrador se activa a mano (abajo).
   (`/acceso?t=…`) y la app canjea el token con `verifyOtp`, así que la vista previa de
   WhatsApp no lo gasta.
 
+## Notificaciones push
+
+El par VAPID del repositorio es solo de desarrollo. Para producción:
+
+1. Genera un par nuevo: `pnpm dlx web-push generate-vapid-keys`.
+2. Guárdalo como secretos de las Edge Functions (la privada no va nunca al repositorio):
+
+   ```bash
+   pnpm exec supabase secrets set VAPID_PUBLIC_KEY=… VAPID_PRIVATE_KEY=… VAPID_SUBJECT=mailto:…
+   ```
+
+3. La clave pública sustituye a `__VAPID_PUBLIC_KEY__` en `src/environments/environment.ts`
+   durante el build de producción. Esa sustitución llega con el plan 4: hasta entonces un
+   build de producción no puede activar las notificaciones.
+4. Despliega la función: `pnpm exec supabase functions deploy send-push` (`verify_jwt = false`
+   ya está en `supabase/config.toml`: la llama `pg_net` sin JWT).
+5. En el SQL editor, guarda la URL que llama `perform_operation`:
+
+   ```sql
+   select vault.create_secret('https://<ref>.supabase.co/functions/v1/send-push', 'stocka2_push_url');
+   ```
+
+   Hazlo en la misma sesión que `supabase db push`. Sin ese secreto los avisos se encolan en
+   `push_outbox` pero no se envían.
+
+Rotar las claves VAPID invalida todas las suscripciones existentes (los servicios push
+responden 403). Tras rotarlas, ejecuta `truncate public.push_subscriptions;` y los usuarios
+tienen que volver a activar las notificaciones en su perfil.
+
 ## Primer administrador
 
 El seed no se aplica en producción. Crea el usuario desde el panel de Supabase

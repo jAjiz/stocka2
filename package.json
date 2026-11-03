@@ -5,12 +5,13 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "serve:pwa": "ng build --configuration production,local && pnpm dlx serve -s dist/stocka2/browser -l 4300",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "db:test": "node scripts/db-test.mjs",
-    "test:functions": "node scripts/smoke-admin-users.mjs"
+    "test:functions": "node scripts/smoke-admin-users.mjs && node scripts/smoke-push.mjs"
   },
   "private": true,
   "license": "MIT",
@@ -24,6 +25,7 @@
     "@angular/material": "^22.2.5",
     "@angular/platform-browser": "^22.2.0",
     "@angular/router": "^22.2.0",
+    "@angular/service-worker": "^22.2.0",
     "@supabase/supabase-js": "^2.118.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"

@@ -93,3 +93,33 @@ export interface AccessLink {
   url: string;
   expiresAt: Date;
 }
+
+/** Aviso de stock activo: la cantidad ha llegado al umbral de una regla. */
+export interface StockAlert {
+  itemId: string;
+  locationId: string;
+  quantity: number;
+  level: 'warning' | 'critical';
+  threshold: number;
+}
+
+export interface AlertRule {
+  id: string;
+  name: string;
+  allItems: boolean;
+  allLocations: boolean;
+  itemIds: string[];
+  locationIds: string[];
+  warning: number | null;
+  critical: number | null;
+  active: boolean;
+}
+
+/** `null` en itemIds / locationIds = todos (incluidos los que se den de alta después). */
+export interface AlertRuleInput {
+  name: string;
+  itemIds: string[] | null;
+  locationIds: string[] | null;
+  warning: number | null;
+  critical: number | null;
+}

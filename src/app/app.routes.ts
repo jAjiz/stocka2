@@ -63,6 +63,11 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./features/admin/item-types.page').then((m) => m.ItemTypesPage),
           },
+          {
+            path: 'avisos',
+            loadComponent: () =>
+              import('./features/admin/alert-rules.page').then((m) => m.AlertRulesPage),
+          },
         ],
       },
     ],

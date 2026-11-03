@@ -1,8 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { isAuthRetryableFetchError, Session } from '@supabase/supabase-js';
 import { Profile } from '../data/models';
+import { PushService } from '../data/push.service';
 import { SUPABASE } from './supabase';
 
+const FORGET_DEVICE_TIMEOUT_MS = 3000;
 const NETWORK_ERROR = 'Sin conexión. Inténtalo de nuevo.';
 const INVALID_LINK = 'El enlace no es válido o ha caducado. Pide uno nuevo al administrador.';
 
@@ -19,6 +21,7 @@ class InactiveUserError extends Error {}
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly supabase = inject(SUPABASE);
+  private readonly push = inject(PushService);
 
   readonly session = signal<Session | null>(null);
   readonly profile = signal<Profile | null>(null);
@@ -118,6 +121,12 @@ export class AuthService {
   }
 
   async signOut(): Promise<void> {
+    // Con la sesión aún válida, para que la RPC pueda borrar la suscripción del dispositivo.
+    // Con tope de tiempo: una red caída no debe impedir cerrar la sesión.
+    await Promise.race([
+      this.push.forgetDevice(),
+      new Promise<void>((resolve) => setTimeout(resolve, FORGET_DEVICE_TIMEOUT_MS)),
+    ]);
     try {
       await this.supabase.auth.signOut();
     } catch {
@@ -174,6 +183,8 @@ export class AuthService {
     this.permittedLocationIds.set(loaded.permitted);
     this.session.set(session);
     this.loadError.set(false);
+    // Reasocia la suscripción de este dispositivo con el usuario actual (sin esperar).
+    void this.push.syncDevice();
   }
 
   private async loadUserData(

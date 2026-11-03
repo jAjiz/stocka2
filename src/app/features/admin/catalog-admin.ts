@@ -10,9 +10,9 @@ import { NameDialogComponent, NameDialogData } from './name-dialog.component';
 
 /** Lo común de las páginas de localizaciones, tipos y artículos. */
 export abstract class CatalogAdmin {
-  private readonly dialog = inject(MatDialog);
+  protected readonly dialog = inject(MatDialog);
   private readonly pending = inject(PendingTasks);
-  private readonly isHandset = toSignal(
+  protected readonly isHandset = toSignal(
     inject(BreakpointObserver)
       .observe(Breakpoints.Handset)
       .pipe(map((s) => s.matches)),

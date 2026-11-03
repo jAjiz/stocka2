@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { AuthApiError, AuthRetryableFetchError } from '@supabase/supabase-js';
+import { PushService } from '../data/push.service';
 import { AuthService } from './auth.service';
 import { SUPABASE } from './supabase';
 
@@ -64,8 +65,17 @@ function setup(opts: FakeOpts = {}) {
       }),
     }),
   };
-  TestBed.configureTestingModule({ providers: [{ provide: SUPABASE, useValue: fake }] });
-  return { auth: TestBed.inject(AuthService), signOut, opts, fake };
+  const push = {
+    forgetDevice: vi.fn().mockResolvedValue(undefined),
+    syncDevice: vi.fn().mockResolvedValue(undefined),
+  };
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: SUPABASE, useValue: fake },
+      { provide: PushService, useValue: push },
+    ],
+  });
+  return { auth: TestBed.inject(AuthService), signOut, opts, fake, push };
 }
 
 const INACTIVE = 'Tu usuario está desactivado. Habla con el administrador.';
@@ -84,6 +94,13 @@ describe('AuthService', () => {
     expect(auth.session()).not.toBeNull();
     expect(auth.profile()?.displayName).toBe('Furgo 1');
     expect(auth.canOperate('l1')).toBe(true);
+  });
+
+  it('signIn correcto vuelve a registrar la suscripción del dispositivo', async () => {
+    const { auth, push } = setup();
+    await auth.ready;
+    await auth.signIn('a@b.c', 'x');
+    expect(push.syncDevice).toHaveBeenCalled();
   });
 
   it('signIn con usuario inactivo lanza y cierra sesión', async () => {
@@ -202,6 +219,31 @@ describe('AuthService', () => {
     expect(auth.session()).toBeNull();
     expect(auth.profile()).toBeNull();
     expect(auth.permittedLocationIds().size).toBe(0);
+  });
+
+  it('signOut olvida el dispositivo antes de cerrar la sesión', async () => {
+    const { auth, push, signOut } = setup({ restored: true });
+    await auth.ready;
+    await auth.signOut();
+    expect(push.forgetDevice).toHaveBeenCalled();
+    expect(push.forgetDevice.mock.invocationCallOrder[0]).toBeLessThan(
+      signOut.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('signOut cierra la sesión aunque forgetDevice se quede colgado', async () => {
+    const { auth, push, signOut } = setup({ restored: true });
+    await auth.ready;
+    push.forgetDevice.mockReturnValue(new Promise(() => undefined));
+    vi.useFakeTimers();
+    try {
+      const done = auth.signOut();
+      await vi.advanceTimersByTimeAsync(3000);
+      await done;
+      expect(signOut).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('acceptLink con un enlace caducado da el mensaje de enlace no válido', async () => {

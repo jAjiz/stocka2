@@ -1,0 +1,25 @@
+{
+  "name": "Stocka2",
+  "short_name": "Stocka2",
+  "lang": "es",
+  "description": "Inventario de material por localizaciones",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#005cbb",
+  "background_color": "#fdfbff",
+  "icons": [
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

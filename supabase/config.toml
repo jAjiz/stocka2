@@ -390,8 +390,12 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+# Par VAPID de desarrollo para send-push (solo desarrollo, como la contraseña del seed).
+# En producción: supabase secrets set (docs/deployment.md).
+[edge_runtime.secrets]
+VAPID_PUBLIC_KEY = "BN_YACFxG6PuoMRjF8GvTA_O7kJs97jxWEI3w1BlEkRAliGv6cLtAJnKF2E4jNUfFLX36d4F2dbcOoH5rSKOF9w"
+VAPID_PRIVATE_KEY = "gc47tcDIWAxV1m-A0_HeCkGDAD9T1rGb1iiAH8Wonxw"
+VAPID_SUBJECT = "mailto:dev@stocka2.test"
 
 [analytics]
 enabled = true
@@ -423,3 +427,8 @@ enabled = true
 
 [functions.admin-users]
 verify_jwt = true
+
+# La llama pg_net sin JWT. No necesita autenticación: solo vacía lo que ya está en
+# push_outbox, así que una llamada falsa no puede inventar avisos ni duplicarlos.
+[functions.send-push]
+verify_jwt = false
