@@ -10,7 +10,7 @@
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "db:test": "node scripts/db-test.mjs",
-    "test:functions": "node scripts/smoke-admin-users.mjs"
+    "test:functions": "node scripts/smoke-admin-users.mjs && node scripts/smoke-push.mjs"
   },
   "private": true,
   "license": "MIT",
