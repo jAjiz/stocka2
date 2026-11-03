@@ -30,14 +30,26 @@ async function setup() {
         critical: 2,
         active: true,
       },
+      {
+        id: 'r3',
+        name: 'Viejas',
+        allItems: true,
+        allLocations: false,
+        itemIds: [],
+        locationIds: ['l3'],
+        warning: 3,
+        critical: null,
+        active: true,
+      },
     ]),
     deleteRule: vi.fn().mockRejectedValue({ message: 'forbidden' }),
   };
   const catalog = {
     items: vi.fn().mockResolvedValue([]),
-    locations: vi.fn().mockResolvedValue([
+    allLocations: vi.fn().mockResolvedValue([
       { id: 'l1', name: 'Taller', kind: 'warehouse', active: true },
       { id: 'l2', name: 'Furgoneta 1', kind: 'vehicle', active: true },
+      { id: 'l3', name: 'Almacén viejo', kind: 'warehouse', active: false },
     ]),
   };
   TestBed.configureTestingModule({
@@ -70,6 +82,11 @@ describe('AlertRulesPage', () => {
     expect(some).toContain('Artículos: 2');
     expect(some).toContain('Localizaciones: Taller, Furgoneta 1');
     expect(some).toContain('Leve ≤ 5 · Grave ≤ 2');
+  });
+
+  it('nombra las localizaciones deshabilitadas de una regla', async () => {
+    const { el } = await setup();
+    expect(row(el, 'Viejas')!.textContent).toContain('Localizaciones: Almacén viejo (deshabilitada)');
   });
 
   it('muestra el error al eliminar sin permiso', async () => {

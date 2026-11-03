@@ -33,6 +33,7 @@ export class AlertRulesPage extends CatalogAdmin {
 
   private readonly rules = signal<AlertRule[]>([]);
   private readonly items = signal<Item[]>([]);
+  /** Todas, también las deshabilitadas, para nombrar las localizaciones de cada regla. */
   private readonly locations = signal<Location[]>([]);
 
   protected readonly rows = computed<CatalogRow[]>(() =>
@@ -53,7 +54,7 @@ export class AlertRulesPage extends CatalogAdmin {
     const [rules, items, locations] = await Promise.all([
       this.alerts.rules(),
       this.catalog.items(),
-      this.catalog.locations(),
+      this.catalog.allLocations(),
     ]);
     this.rules.set(rules);
     this.items.set(items);
@@ -62,8 +63,9 @@ export class AlertRulesPage extends CatalogAdmin {
 
   private detail(r: AlertRule): string {
     const names = r.locationIds
-      .map((id) => this.locations().find((l) => l.id === id)?.name)
-      .filter((n): n is string => !!n);
+      .map((id) => this.locations().find((l) => l.id === id))
+      .filter((l): l is Location => !!l)
+      .map((l) => (l.active ? l.name : `${l.name} (deshabilitada)`));
     const levels = [
       r.warning !== null ? `Leve ≤ ${r.warning}` : null,
       r.critical !== null ? `Grave ≤ ${r.critical}` : null,
@@ -83,7 +85,7 @@ export class AlertRulesPage extends CatalogAdmin {
     const saved = await firstValueFrom(
       this.dialog
         .open<AlertRuleDialogComponent, AlertRuleDialogData, boolean>(AlertRuleDialogComponent, {
-          data: { rule, copy, items: this.items(), locations: this.locations() },
+          data: { rule, copy, items: this.items(), locations: this.locations().filter((l) => l.active) },
           disableClose: true,
           ...dialogSize(this.isHandset()),
         })

@@ -99,4 +99,28 @@ describe('AlertRuleDialogComponent', () => {
       expect.objectContaining({ name: 'Tornillos (copia)' }),
     );
   });
+
+  it('al editar solo el nombre conserva artículos y localizaciones deshabilitados', async () => {
+    const { alerts, fixture, type, save } = await setup({
+      rule: {
+        ...rule,
+        allItems: false,
+        allLocations: false,
+        itemIds: ['i1', 'iOld'],
+        locationIds: ['lOld'],
+      },
+      copy: false,
+    });
+    type('Nombre', 'Otro nombre');
+    expect(save().disabled).toBe(false);
+    save().click();
+    await fixture.whenStable();
+    expect(alerts.saveRule).toHaveBeenCalledWith('r1', {
+      name: 'Otro nombre',
+      itemIds: ['i1', 'iOld'],
+      locationIds: ['lOld'],
+      warning: null,
+      critical: 1,
+    });
+  });
 });

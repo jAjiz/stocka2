@@ -105,7 +105,7 @@ function parseThreshold(text: string): number | null {
               }
             </mat-autocomplete>
           </mat-form-field>
-          @if (itemIds().length === 0) {
+          @if (itemIds().length + hiddenItemIds.length === 0) {
             <p class="error">Elige al menos un artículo.</p>
           }
         }
@@ -124,7 +124,7 @@ function parseThreshold(text: string): number | null {
               </mat-checkbox>
             }
           </div>
-          @if (locationIds().length === 0) {
+          @if (locationIds().length + hiddenLocationIds.length === 0) {
             <p class="error">Elige al menos una localización.</p>
           }
         }
@@ -185,7 +185,14 @@ export class AlertRuleDialogComponent {
   );
   protected readonly allItems = signal(this.data.rule?.allItems ?? true);
   protected readonly allLocations = signal(this.data.rule?.allLocations ?? true);
-  // Solo se conservan los elegibles: los inactivos no cuentan para los avisos.
+  // Los ids que no están entre los elegibles (artículos o localizaciones deshabilitados)
+  // no se muestran, pero se conservan al guardar para que sigan cubiertos si se rehabilitan.
+  protected readonly hiddenItemIds = (this.data.rule?.itemIds ?? []).filter(
+    (id) => !this.data.items.some((i) => i.id === id),
+  );
+  protected readonly hiddenLocationIds = (this.data.rule?.locationIds ?? []).filter(
+    (id) => !this.data.locations.some((l) => l.id === id),
+  );
   protected readonly itemIds = signal(
     (this.data.rule?.itemIds ?? []).filter((id) => this.data.items.some((i) => i.id === id)),
   );
@@ -227,8 +234,8 @@ export class AlertRuleDialogComponent {
     () =>
       !!this.name().trim() &&
       !this.thresholdsError() &&
-      (this.allItems() || this.itemIds().length > 0) &&
-      (this.allLocations() || this.locationIds().length > 0),
+      (this.allItems() || this.itemIds().length + this.hiddenItemIds.length > 0) &&
+      (this.allLocations() || this.locationIds().length + this.hiddenLocationIds.length > 0),
   );
 
   protected addItem(event: MatAutocompleteSelectedEvent): void {
@@ -255,8 +262,8 @@ export class AlertRuleDialogComponent {
     try {
       await this.alerts.saveRule(this.data.copy ? null : (this.data.rule?.id ?? null), {
         name: this.name().trim(),
-        itemIds: this.allItems() ? null : this.itemIds(),
-        locationIds: this.allLocations() ? null : this.locationIds(),
+        itemIds: this.allItems() ? null : [...this.itemIds(), ...this.hiddenItemIds],
+        locationIds: this.allLocations() ? null : [...this.locationIds(), ...this.hiddenLocationIds],
         warning: parseThreshold(this.warning()),
         critical: parseThreshold(this.critical()),
       });
