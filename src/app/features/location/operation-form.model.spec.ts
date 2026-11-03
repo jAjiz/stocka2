@@ -12,8 +12,12 @@ describe('operation-form.model', () => {
 
   it('validateLines rechaza cantidades no válidas', () => {
     expect(validateLines([{ itemId: 'a', quantity: 0 }], null).get('a')).toBe('Cantidad no válida');
-    expect(validateLines([{ itemId: 'a', quantity: 1.5 }], null).get('a')).toBe('Cantidad no válida');
-    expect(validateLines([{ itemId: 'a', quantity: NaN }], null).get('a')).toBe('Cantidad no válida');
+    expect(validateLines([{ itemId: 'a', quantity: 1.5 }], null).get('a')).toBe(
+      'Cantidad no válida',
+    );
+    expect(validateLines([{ itemId: 'a', quantity: NaN }], null).get('a')).toBe(
+      'Cantidad no válida',
+    );
   });
 
   it('validateLines comprueba el stock disponible', () => {

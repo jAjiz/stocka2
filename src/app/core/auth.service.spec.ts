@@ -10,6 +10,7 @@ interface FakeOpts {
   permissions?: string[];
   signInError?: unknown;
   signInThrows?: unknown;
+  verifyOtpError?: unknown;
 }
 
 function setup(opts: FakeOpts = {}) {
@@ -26,13 +27,24 @@ function setup(opts: FakeOpts = {}) {
       getSession: vi.fn().mockResolvedValue({ data: { session: opts.restored ? session : null } }),
       signInWithPassword: opts.signInThrows
         ? vi.fn().mockRejectedValue(opts.signInThrows)
-        : vi.fn().mockResolvedValue(
-            opts.signInError
-              ? { data: { session: null }, error: opts.signInError }
-              : { data: { session }, error: null },
-          ),
+        : vi
+            .fn()
+            .mockResolvedValue(
+              opts.signInError
+                ? { data: { session: null }, error: opts.signInError }
+                : { data: { session }, error: null },
+            ),
       signOut,
+      verifyOtp: vi
+        .fn()
+        .mockResolvedValue(
+          opts.verifyOtpError
+            ? { data: { session: null }, error: opts.verifyOtpError }
+            : { data: { session }, error: null },
+        ),
+      updateUser: vi.fn().mockResolvedValue({ data: {}, error: null }),
     },
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     from: (table: string) => ({
       select: () => ({
         eq: () =>
@@ -53,7 +65,7 @@ function setup(opts: FakeOpts = {}) {
     }),
   };
   TestBed.configureTestingModule({ providers: [{ provide: SUPABASE, useValue: fake }] });
-  return { auth: TestBed.inject(AuthService), signOut, opts };
+  return { auth: TestBed.inject(AuthService), signOut, opts, fake };
 }
 
 const INACTIVE = 'Tu usuario está desactivado. Habla con el administrador.';
@@ -190,5 +202,50 @@ describe('AuthService', () => {
     expect(auth.session()).toBeNull();
     expect(auth.profile()).toBeNull();
     expect(auth.permittedLocationIds().size).toBe(0);
+  });
+
+  it('acceptLink con un enlace caducado da el mensaje de enlace no válido', async () => {
+    const { auth } = setup({
+      verifyOtpError: new AuthApiError('Token has expired or is invalid', 403, 'otp_expired'),
+    });
+    await auth.ready;
+    await expect(auth.acceptLink('h')).rejects.toThrow(
+      'El enlace no es válido o ha caducado. Pide uno nuevo al administrador.',
+    );
+  });
+
+  it('acceptLink con el usuario desactivado cierra sesión', async () => {
+    const { auth, signOut } = setup({ profile: inactiveProfile });
+    await auth.ready;
+    await expect(auth.acceptLink('h')).rejects.toThrow(INACTIVE);
+    expect(signOut).toHaveBeenCalled();
+  });
+
+  it('acceptLink canjea el token_hash y carga el perfil', async () => {
+    const { auth, fake } = setup({ permissions: ['l1'] });
+    await auth.ready;
+    await auth.acceptLink('h');
+    expect(fake.auth.verifyOtp).toHaveBeenCalledWith({ token_hash: 'h', type: 'recovery' });
+    expect(auth.profile()?.displayName).toBe('Furgo 1');
+    expect(auth.canOperate('l1')).toBe(true);
+  });
+
+  it('setPassword llama a updateUser y traduce el error', async () => {
+    const { auth, fake } = setup();
+    await auth.ready;
+    await auth.setPassword('nueva-clave');
+    expect(fake.auth.updateUser).toHaveBeenCalledWith({ password: 'nueva-clave' });
+    fake.auth.updateUser.mockResolvedValueOnce({ data: {}, error: new Error('x') });
+    await expect(auth.setPassword('otra-clave')).rejects.toThrow(
+      'No se ha podido cambiar la contraseña. Inténtalo de nuevo.',
+    );
+  });
+
+  it('updateDisplayName actualiza el perfil', async () => {
+    const { auth, fake } = setup({ restored: true });
+    await auth.ready;
+    await auth.updateDisplayName('Pepe');
+    expect(fake.rpc).toHaveBeenCalledWith('update_my_profile', { p_display_name: 'Pepe' });
+    expect(auth.profile()?.displayName).toBe('Pepe');
   });
 });

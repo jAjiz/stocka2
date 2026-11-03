@@ -17,7 +17,10 @@ const BAN_FOREVER = '876000h';
 const RPC_CODES = new Set(['forbidden', 'invalid_input', 'not_found', 'last_admin']);
 
 class HttpError extends Error {
-  constructor(readonly status: number, readonly code: string) {
+  constructor(
+    readonly status: number,
+    readonly code: string,
+  ) {
     super(code);
   }
 }
@@ -68,7 +71,11 @@ async function generateLink(admin: SupabaseClient, userId: string) {
   };
 }
 
-async function invite(admin: SupabaseClient, caller: SupabaseClient, body: Record<string, unknown>) {
+async function invite(
+  admin: SupabaseClient,
+  caller: SupabaseClient,
+  body: Record<string, unknown>,
+) {
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   const displayName = typeof body.displayName === 'string' ? body.displayName.trim() : '';
   const role = body.role;
@@ -125,12 +132,19 @@ async function invite(admin: SupabaseClient, caller: SupabaseClient, body: Recor
   return { userId, ...(await generateLink(admin, userId)) };
 }
 
-async function setActive(admin: SupabaseClient, caller: SupabaseClient, body: Record<string, unknown>) {
+async function setActive(
+  admin: SupabaseClient,
+  caller: SupabaseClient,
+  body: Record<string, unknown>,
+) {
   const { userId, active } = body;
   if (typeof userId !== 'string' || !UUID.test(userId) || typeof active !== 'boolean') {
     throw new HttpError(400, 'invalid_input');
   }
-  const { error } = await caller.rpc('admin_set_user_active', { p_user_id: userId, p_active: active });
+  const { error } = await caller.rpc('admin_set_user_active', {
+    p_user_id: userId,
+    p_active: active,
+  });
   if (error) throw rpcError(error);
 
   // El perfil ya está desactivado (RLS le corta las lecturas); el baneo impide además

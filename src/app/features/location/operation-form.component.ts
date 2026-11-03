@@ -135,7 +135,11 @@ export interface OperationFormData {
             <div class="new-item">
               <mat-form-field>
                 <mat-label>Nombre</mat-label>
-                <input matInput [value]="newName()" (input)="newName.set($any($event.target).value)" />
+                <input
+                  matInput
+                  [value]="newName()"
+                  (input)="newName.set($any($event.target).value)"
+                />
               </mat-form-field>
               <mat-form-field>
                 <mat-label>Tipo</mat-label>
@@ -147,7 +151,11 @@ export interface OperationFormData {
               </mat-form-field>
               <mat-form-field>
                 <mat-label>Referencia (opcional)</mat-label>
-                <input matInput [value]="newRef()" (input)="newRef.set($any($event.target).value)" />
+                <input
+                  matInput
+                  [value]="newRef()"
+                  (input)="newRef.set($any($event.target).value)"
+                />
               </mat-form-field>
               @if (createError()) {
                 <p class="error" role="alert">{{ createError() }}</p>
@@ -199,7 +207,11 @@ export interface OperationFormData {
         @if (data.kind === 'consume') {
           <mat-form-field>
             <mat-label>Referencia (opcional)</mat-label>
-            <input matInput [value]="reference()" (input)="reference.set($any($event.target).value)" />
+            <input
+              matInput
+              [value]="reference()"
+              (input)="reference.set($any($event.target).value)"
+            />
           </mat-form-field>
         }
         <mat-form-field>

@@ -11,7 +11,9 @@ const DEV_PASSWORD = 'stocka2-dev';
 
 let failures = 0;
 function check(name, cond, extra) {
-  console.log(`${cond ? 'ok   ' : 'FALLO'} ${name}${!cond && extra !== undefined ? ` → ${JSON.stringify(extra)}` : ''}`);
+  console.log(
+    `${cond ? 'ok   ' : 'FALLO'} ${name}${!cond && extra !== undefined ? ` → ${JSON.stringify(extra)}` : ''}`,
+  );
   if (!cond) failures++;
 }
 
@@ -44,32 +46,56 @@ const email = `smoke-${Date.now()}@stocka2.test`;
 
 // 1. Un usuario normal no puede invitar
 const r1 = await call(furgo1, {
-  action: 'invite', email: 'x@stocka2.test', displayName: 'X', role: 'user', locationIds: [],
+  action: 'invite',
+  email: 'x@stocka2.test',
+  displayName: 'X',
+  role: 'user',
+  locationIds: [],
 });
 check('usuario normal → forbidden (403)', r1.code === 'forbidden' && r1.status === 403, r1);
 
 // 2. Invitación
 const r2 = await call(admin, {
-  action: 'invite', email: `  ${email} `, displayName: 'Smoke', role: 'user', locationIds: [f1],
+  action: 'invite',
+  email: `  ${email} `,
+  displayName: 'Smoke',
+  role: 'user',
+  locationIds: [f1],
 });
 const ttl = r2.data ? new Date(r2.data.expiresAt).getTime() - Date.now() : NaN;
 check('invite devuelve tokenHash y userId', !!r2.data?.tokenHash && !!r2.data?.userId, r2);
 check('expiresAt ≈ 24 h', Math.abs(ttl - 86_400_000) < 60_000, r2.data?.expiresAt);
-check('invite no devuelve action_link', r2.data && !('actionLink' in r2.data) && !('action_link' in r2.data));
+check(
+  'invite no devuelve action_link',
+  r2.data && !('actionLink' in r2.data) && !('action_link' in r2.data),
+);
 const { data: listed } = await admin.rpc('admin_list_users');
 const invited = listed?.find((u) => u.id === r2.data?.userId);
-check('perfil activo con nombre y permiso',
-  invited?.active === true && invited.display_name === 'Smoke' && invited.location_ids.join() === f1, invited);
+check(
+  'perfil activo con nombre y permiso',
+  invited?.active === true &&
+    invited.display_name === 'Smoke' &&
+    invited.location_ids.join() === f1,
+  invited,
+);
 
 // 3. Correo repetido
 const r3 = await call(admin, {
-  action: 'invite', email: email.toUpperCase(), displayName: 'Otra', role: 'user', locationIds: [],
+  action: 'invite',
+  email: email.toUpperCase(),
+  displayName: 'Otra',
+  role: 'user',
+  locationIds: [],
 });
 check('correo repetido → email_exists', r3.code === 'email_exists', r3);
 
 // 3b. Datos no válidos
 const r3b = await call(admin, {
-  action: 'invite', email: 'no-es-correo', displayName: 'X', role: 'user', locationIds: [],
+  action: 'invite',
+  email: 'no-es-correo',
+  displayName: 'X',
+  role: 'user',
+  locationIds: [],
 });
 check('correo no válido → invalid_input', r3b.code === 'invalid_input', r3b);
 
@@ -88,7 +114,11 @@ check('el mismo enlace no vale dos veces', !!v2.error);
 
 // 5b. Regenerar enlace (recuperación)
 const r5 = await call(admin, { action: 'link', userId: r2.data.userId });
-check('link devuelve un tokenHash nuevo', !!r5.data?.tokenHash && r5.data.tokenHash !== r2.data.tokenHash, r5);
+check(
+  'link devuelve un tokenHash nuevo',
+  !!r5.data?.tokenHash && r5.data.tokenHash !== r2.data.tokenHash,
+  r5,
+);
 
 // 6. Desactivar: el JWT antiguo deja de leer y no puede volver a entrar
 const before = await guest.from('locations').select('id');

@@ -9,6 +9,24 @@ describe('dbErrorMessage', () => {
     ['inactive_item', 'Alguno de los artículos está deshabilitado.'],
     ['duplicate_name', 'Ya existe un artículo con ese nombre.'],
     ['inactive_type', 'El tipo de artículo está deshabilitado.'],
+    ['invalid_input', 'Revisa los datos: hay campos vacíos o no válidos.'],
+    ['not_found', 'No se ha encontrado el elemento. Recarga la página.'],
+    ['duplicate_location', 'Ya existe una localización con ese nombre.'],
+    ['duplicate_type', 'Ya existe un tipo con ese nombre.'],
+    ['location_has_stock', 'No se puede deshabilitar: la localización todavía tiene stock.'],
+    [
+      'location_in_use',
+      'No se puede eliminar porque aparece en el historial. Puedes deshabilitarla.',
+    ],
+    [
+      'type_in_use',
+      'No se puede eliminar porque hay artículos de este tipo. Puedes deshabilitarlo.',
+    ],
+    ['item_has_stock', 'No se puede deshabilitar: el artículo todavía tiene stock.'],
+    ['item_in_use', 'No se puede eliminar porque aparece en el historial. Puedes deshabilitarlo.'],
+    ['last_admin', 'Tiene que quedar al menos un administrador activo.'],
+    ['email_exists', 'Ya existe un usuario con ese correo.'],
+    ['inactive_user', 'El usuario está desactivado. Actívalo antes de generar un enlace.'],
   ];
 
   for (const [code, text] of cases) {

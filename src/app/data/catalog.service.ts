@@ -100,6 +100,19 @@ export class CatalogService {
     return rows.map((r) => ({ id: r.id, name: r.name, active: r.active }));
   }
 
+  /** Todos los tipos, incluidos los deshabilitados (administración). */
+  async allItemTypes(): Promise<ItemType[]> {
+    const rows = await fetchAll<{ id: string; name: string; active: boolean }>((from, to) =>
+      this.supabase
+        .from('item_types')
+        .select('id, name, active')
+        .order('name')
+        .order('id')
+        .range(from, to),
+    );
+    return rows.map((r) => ({ id: r.id, name: r.name, active: r.active }));
+  }
+
   async items(): Promise<Item[]> {
     const rows = await fetchAll<ItemDbRow>((from, to) =>
       this.supabase
