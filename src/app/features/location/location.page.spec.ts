@@ -16,7 +16,7 @@ const alertsFake = () => ({
   ]),
 });
 
-async function setup(canOperate: boolean, id = 'l1') {
+async function setup(canOperate: boolean, id = 'l1', alertsFail = false) {
   const auth = { canOperate: () => canOperate, isAdmin: signal(false), ready: Promise.resolve() };
   const catalog = {
     locations: async () => [{ id: 'l1', name: 'Taller', kind: 'warehouse', active: true }],
@@ -35,6 +35,7 @@ async function setup(canOperate: boolean, id = 'l1') {
     ],
   };
   const alerts = alertsFake();
+  if (alertsFail) alerts.active.mockRejectedValue({ message: 'network' });
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
@@ -86,6 +87,14 @@ describe('LocationPage', () => {
     expect(rows.length).toBe(1);
     expect(rows[0].textContent).toContain('Filtró de aire');
     expect(rows[0].querySelector('a')).toBeNull();
+  });
+
+  it('si fallan los avisos, el stock se muestra igual y sin error', async () => {
+    const f = await setup(true, 'l1', true);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Filtró de aire');
+    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(el.querySelectorAll('app-alert-list li').length).toBe(0);
   });
 
   it('tras una operación recarga los avisos', async () => {

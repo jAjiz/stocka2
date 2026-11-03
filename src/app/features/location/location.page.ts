@@ -314,6 +314,16 @@ export class LocationPage {
 
   private requestSeq = 0;
 
+  /** Los avisos son accesorios: si fallan, el stock se muestra igual. */
+  private async loadAlerts(seq: number): Promise<void> {
+    try {
+      const alerts = await this.alertsService.active();
+      if (seq === this.requestSeq) this.alerts.set(alerts);
+    } catch {
+      if (seq === this.requestSeq) this.alerts.set([]);
+    }
+  }
+
   /** `refresh`: recarga la misma localización conservando las filas actuales hasta tener las nuevas. */
   private async load(id: string, refresh = false): Promise<void> {
     const seq = ++this.requestSeq;
@@ -331,13 +341,13 @@ export class LocationPage {
       this.loaded.set(true);
       return;
     }
+    void this.loadAlerts(seq);
     try {
-      const [locations, types, items, stock, alerts] = await Promise.all([
+      const [locations, types, items, stock] = await Promise.all([
         this.catalog.locations(),
         this.catalog.itemTypes(),
         this.catalog.items(),
         this.stockService.byLocation(id),
-        this.alertsService.active(),
       ]);
       if (stale()) return;
       const location = locations.find((l) => l.id === id);
@@ -346,7 +356,6 @@ export class LocationPage {
       this.types.set(types);
       this.items.set(items);
       this.stock.set(stock);
-      this.alerts.set(alerts);
     } catch (e) {
       if (!stale()) this.error.set(dbErrorMessage(e));
     } finally {
