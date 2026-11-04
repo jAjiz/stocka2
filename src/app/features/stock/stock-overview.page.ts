@@ -9,7 +9,6 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -32,60 +31,38 @@ interface ItemRow {
 @Component({
   selector: 'app-stock-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatTableModule],
+  imports: [MatFormFieldModule, MatInputModule, MatSelectModule, MatTableModule],
   styles: `
     .filters {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
+      margin-bottom: 16px;
     }
     .filters mat-form-field {
       flex: 1 1 220px;
     }
+    @media (min-width: 600px) {
+      .filters mat-form-field {
+        max-width: 320px;
+      }
+    }
     .table-wrap {
       overflow-x: auto;
     }
-    table {
-      width: 100%;
-    }
-    .num {
-      text-align: right;
-    }
-    .cards {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .card-body {
-      padding: 12px 16px;
-    }
-    .name {
-      font: var(--mat-sys-title-medium);
-    }
-    .meta {
-      color: var(--mat-sys-on-surface-variant);
-      font: var(--mat-sys-body-small);
-    }
-    .qtys {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 2px 16px;
-      margin-top: 8px;
-    }
-    .qtys .q {
-      text-align: right;
+    .reference {
+      white-space: nowrap;
     }
     .error {
       color: var(--mat-sys-error);
     }
   `,
   template: `
-    <h1>Stock global</h1>
     @if (error()) {
       <p class="error" role="alert">{{ error() }}</p>
     }
     <div class="filters">
-      <mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Buscar</mat-label>
         <input
           matInput
@@ -95,7 +72,7 @@ interface ItemRow {
           (input)="search.set($any($event.target).value)"
         />
       </mat-form-field>
-      <mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Tipo</mat-label>
         <mat-select [value]="typeFilter()" (selectionChange)="typeFilter.set($event.value)">
           <mat-option value="">Todos</mat-option>
@@ -108,49 +85,37 @@ interface ItemRow {
 
     @if (!loaded()) {
       <p role="status">Cargando…</p>
-    } @else if (filtered().length === 0 && !error()) {
-      <p>No hay artículos que mostrar.</p>
     }
 
-    @if (isHandset()) {
-      <div class="cards">
-        @for (r of filtered(); track r.id) {
-          <mat-card appearance="outlined">
-            <div class="card-body">
-              <div class="name">{{ r.name }}</div>
-              <div class="meta">{{ r.typeName }}</div>
-              <div class="qtys">
-                @for (l of locations(); track l.id) {
-                  <span>{{ l.name }}</span>
-                  <span class="q">{{ r.quantities.get(l.id) ?? 0 }}</span>
-                }
-              </div>
-            </div>
-          </mat-card>
+    <div class="table-wrap">
+      <table class="app-table" mat-table [dataSource]="filtered()">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Artículo</th>
+          <td mat-cell *matCellDef="let r">
+            {{ r.name }}
+            @if (isHandset() && r.reference) {
+              <div class="sub">{{ r.reference }}</div>
+            }
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="reference">
+          <th mat-header-cell *matHeaderCellDef>Referencia</th>
+          <td mat-cell *matCellDef="let r" class="reference">{{ r.reference }}</td>
+        </ng-container>
+        <ng-container matColumnDef="typeName">
+          <th mat-header-cell *matHeaderCellDef>Tipo</th>
+          <td mat-cell *matCellDef="let r">{{ r.typeName }}</td>
+        </ng-container>
+        @for (l of locations(); track l.id) {
+          <ng-container [matColumnDef]="'loc-' + l.id">
+            <th mat-header-cell *matHeaderCellDef class="num">{{ l.name }}</th>
+            <td mat-cell *matCellDef="let r" class="num">{{ r.quantities.get(l.id) ?? 0 }}</td>
+          </ng-container>
         }
-      </div>
-    } @else {
-      <div class="table-wrap">
-        <table mat-table [dataSource]="filtered()">
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Artículo</th>
-            <td mat-cell *matCellDef="let r">{{ r.name }}</td>
-          </ng-container>
-          <ng-container matColumnDef="typeName">
-            <th mat-header-cell *matHeaderCellDef>Tipo</th>
-            <td mat-cell *matCellDef="let r">{{ r.typeName }}</td>
-          </ng-container>
-          @for (l of locations(); track l.id) {
-            <ng-container [matColumnDef]="'loc-' + l.id">
-              <th mat-header-cell *matHeaderCellDef class="num">{{ l.name }}</th>
-              <td mat-cell *matCellDef="let r" class="num">{{ r.quantities.get(l.id) ?? 0 }}</td>
-            </ng-container>
-          }
-          <tr mat-header-row *matHeaderRowDef="columns()"></tr>
-          <tr mat-row *matRowDef="let row; columns: columns()"></tr>
-        </table>
-      </div>
-    }
+        <tr mat-header-row *matHeaderRowDef="columns()"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns()"></tr>
+      </table>
+    </div>
   `,
 })
 export class StockOverviewPage {
@@ -174,9 +139,13 @@ export class StockOverviewPage {
   private readonly items = signal<Item[]>([]);
   private readonly stock = signal<StockRow[]>([]);
 
+  /**
+   * En móvil se quita el tipo para dejar sitio a las cantidades de cada localización, y la
+   * referencia pasa a ir bajo el nombre.
+   */
   protected readonly columns = computed(() => [
     'name',
-    'typeName',
+    ...(this.isHandset() ? [] : ['reference', 'typeName']),
     ...this.locations().map((l) => 'loc-' + l.id),
   ]);
 

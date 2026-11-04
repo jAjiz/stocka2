@@ -19,7 +19,7 @@ export const MIN_PASSWORD_LENGTH = 8;
   `,
   template: `
     <form (submit)="submit($event)">
-      <mat-form-field>
+      <mat-form-field appearance="outline">
         <mat-label>Nueva contraseña</mat-label>
         <input
           matInput
@@ -33,7 +33,7 @@ export const MIN_PASSWORD_LENGTH = 8;
           <mat-hint class="error">Mínimo 8 caracteres.</mat-hint>
         }
       </mat-form-field>
-      <mat-form-field>
+      <mat-form-field appearance="outline">
         <mat-label>Repite la contraseña</mat-label>
         <input
           matInput

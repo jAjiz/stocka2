@@ -76,12 +76,12 @@ describe('AlertRulesPage', () => {
     const all = row(el, 'Stock general')!.textContent!;
     expect(all).toContain('Artículos: Todos');
     expect(all).toContain('Localizaciones: Todas');
-    expect(all).toContain('Grave ≤ 1');
+    expect(all).toContain('Grave si menor o igual a 1');
     expect(all).not.toContain('Leve');
     const some = row(el, 'Furgonetas')!.textContent!;
     expect(some).toContain('Artículos: 2');
     expect(some).toContain('Localizaciones: Taller, Furgoneta 1');
-    expect(some).toContain('Leve ≤ 5 · Grave ≤ 2');
+    expect(some).toContain('Leve si menor o igual a 5 · Grave si menor o igual a 2');
   });
 
   it('nombra las localizaciones deshabilitadas de una regla', async () => {

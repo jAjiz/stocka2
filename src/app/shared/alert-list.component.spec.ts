@@ -1,22 +1,16 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
 import { StockAlert } from '../data/models';
 import { AlertListComponent } from './alert-list.component';
 
 const alerts: StockAlert[] = [
   { itemId: 'i1', locationId: 'l1', quantity: 3, level: 'warning', threshold: 5 },
-  { itemId: 'i2', locationId: 'l2', quantity: 0, level: 'critical', threshold: 1 },
+  { itemId: 'i2', locationId: 'l1', quantity: 0, level: 'critical', threshold: 1 },
 ];
 
 @Component({
   imports: [AlertListComponent],
-  template: `<app-alert-list
-    [alerts]="alerts()"
-    [itemNames]="itemNames"
-    [locationNames]="locationNames"
-    [showLocation]="showLocation()"
-  />`,
+  template: `<app-alert-list [alerts]="alerts()" [itemNames]="itemNames" />`,
 })
 class Host {
   alerts = signal(alerts);
@@ -24,44 +18,56 @@ class Host {
     ['i1', 'Bridas'],
     ['i2', 'Codo'],
   ]);
-  locationNames = new Map([
-    ['l1', 'F1'],
-    ['l2', 'T'],
-  ]);
-  showLocation = signal(true);
 }
 
 function setup() {
-  TestBed.configureTestingModule({ providers: [provideRouter([])] });
   const f = TestBed.createComponent(Host);
   f.detectChanges();
-  return f;
+  return { f, el: f.nativeElement as HTMLElement };
 }
 
+const text = (el: Element, selector: string) =>
+  [...el.querySelectorAll(selector)].map((n) => n.textContent?.trim());
+
 describe('AlertListComponent', () => {
-  it('ordena los graves primero y muestra icono y texto', () => {
-    const f = setup();
-    const rows = [...(f.nativeElement as HTMLElement).querySelectorAll('li')];
-    expect(rows.length).toBe(2);
-    expect(rows[0].textContent).toContain('Codo');
-    expect(rows[0].querySelector('mat-icon')?.textContent?.trim()).toBe('error');
-    expect(rows[0].textContent).toContain('Quedan 0 · aviso grave si ≤ 1');
-    expect(rows[1].querySelector('mat-icon')?.textContent?.trim()).toBe('warning');
-    expect(rows[1].textContent).toContain('Quedan 3 · aviso si ≤ 5');
-    expect(rows[0].querySelector('a')?.getAttribute('href')).toBe('/localizaciones/l2');
+  it('muestra un mensaje por aviso, con los graves primero', () => {
+    const { el } = setup();
+    expect(el.querySelector('table')).toBeNull();
+    expect(text(el, 'li.alert .message')).toEqual(['Codo: quedan 0', 'Bridas: quedan 3']);
+    expect(text(el, 'li.alert .detail')).toEqual([
+      'Aviso grave · salta con 1 o menos',
+      'Aviso leve · salta con 5 o menos',
+    ]);
   });
 
-  it('sin showLocation no hay enlaces', () => {
-    const f = setup();
-    f.componentInstance.showLocation.set(false);
+  it('usa el singular cuando queda una unidad', () => {
+    const { f, el } = setup();
+    f.componentInstance.alerts.set([{ ...alerts[0], quantity: 1 }]);
     f.detectChanges();
-    expect((f.nativeElement as HTMLElement).querySelectorAll('a').length).toBe(0);
+    expect(text(el, '.message')).toEqual(['Bridas: queda 1']);
+  });
+
+  it('distingue los graves con su color e icono', () => {
+    const { el } = setup();
+    const [critical, warning] = [...el.querySelectorAll('li.alert')];
+    expect(critical.classList).toContain('critical');
+    expect(critical.querySelector('mat-icon')?.textContent).toBe('report');
+    expect(warning.classList).not.toContain('critical');
+    expect(warning.querySelector('mat-icon')?.textContent).toBe('warning');
+  });
+
+  it('se puede contraer y empieza abierto, con el número de avisos a la vista', () => {
+    const { el } = setup();
+    const details = el.querySelector('details') as HTMLDetailsElement;
+    expect(details.open).toBe(true);
+    expect(details.querySelector('summary')?.textContent).toContain('Avisos');
+    expect(details.querySelector('summary')?.textContent).toContain('2');
   });
 
   it('sin avisos no pinta nada', () => {
-    const f = setup();
+    const { f, el } = setup();
     f.componentInstance.alerts.set([]);
     f.detectChanges();
-    expect((f.nativeElement as HTMLElement).querySelector('li')).toBeNull();
+    expect(el.querySelector('details')).toBeNull();
   });
 });

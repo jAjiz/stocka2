@@ -1,9 +1,11 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { BehaviorSubject, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../../core/auth.service';
+import { CurrentLocationService } from '../../core/current-location.service';
 import { AlertsService } from '../../data/alerts.service';
 import { CatalogService } from '../../data/catalog.service';
 import { StockService } from '../../data/stock.service';
@@ -65,9 +67,96 @@ describe('LocationPage', () => {
     expect(text).toContain('Filtró de aire');
     expect(text).toContain('Aceite 5W30');
     expect(text).toContain('Bujía');
-    for (const label of ['Añadir', 'Traer aquí', 'Baja', 'Salida por trabajo']) {
-      expect(text).toContain(label);
-    }
+    const buttons = [...(f.nativeElement as HTMLElement).querySelectorAll('.actions button')];
+    expect(buttons.map((b) => b.textContent?.trim())).toEqual([
+      'Añadir',
+      'Mover',
+      'Eliminar',
+      'Salida',
+    ]);
+  });
+
+  it('el inventario usa la tabla común, con la cantidad como columna numérica', async () => {
+    const f = await setup(true);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('table.mat-mdc-table')?.classList).toContain('app-table');
+    expect(el.querySelector('tr.mat-mdc-row td:last-child')?.classList).toContain('num');
+  });
+
+  it('en móvil el inventario también es una tabla, sin la columna de referencia', async () => {
+    TestBed.overrideProvider(BreakpointObserver, {
+      useValue: { observe: () => of({ matches: true, breakpoints: {} }) },
+    });
+    const f = await setup(true);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('mat-card')).toBeNull();
+    const headers = [...el.querySelectorAll('table.mat-mdc-table th')];
+    expect(headers.map((h) => h.textContent?.trim())).toEqual(['Artículo', 'Tipo', 'Cantidad']);
+    expect(el.querySelectorAll('tr.mat-mdc-row').length).toBe(3);
+  });
+
+  it('en móvil la referencia aparece bajo el nombre, si el artículo la tiene', async () => {
+    TestBed.overrideProvider(BreakpointObserver, {
+      useValue: { observe: () => of({ matches: true, breakpoints: {} }) },
+    });
+    const f = await setup(true);
+    const el = f.nativeElement as HTMLElement;
+    const refs = [...el.querySelectorAll('tr.mat-mdc-row td:first-child')].map((c) =>
+      c.querySelector('.sub')?.textContent?.trim(),
+    );
+    expect(refs).toEqual([undefined, 'BJ-9', 'FA-1']);
+  });
+
+  it('en PC la referencia solo está en su columna, no bajo el nombre', async () => {
+    const f = await setup(true);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('tr.mat-mdc-row .sub')).toBeNull();
+    const headers = [...el.querySelectorAll('table.mat-mdc-table th')];
+    expect(headers.map((h) => h.textContent?.trim())).toContain('Referencia');
+  });
+
+  it('no ofrece Ver historial: ya está en la navegación', async () => {
+    const f = await setup(true);
+    expect(f.nativeElement.textContent).not.toContain('Ver historial');
+  });
+
+  it('titula el inventario después de los avisos', async () => {
+    const f = await setup(true);
+    const el = f.nativeElement as HTMLElement;
+    const heading = [...el.querySelectorAll('h2')].find((h) =>
+      h.textContent?.includes('Inventario actual'),
+    ) as HTMLElement;
+    expect(heading).toBeTruthy();
+    const alerts = el.querySelector('app-alert-list') as HTMLElement;
+    expect(alerts.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('publica la localización actual para la barra superior y la retira al salir', async () => {
+    const f = await setup(true);
+    const current = TestBed.inject(CurrentLocationService);
+    expect(current.location()).toEqual({ name: 'Taller', kind: 'warehouse' });
+    f.destroy();
+    expect(current.location()).toBeNull();
+  });
+
+  it('una localización que no existe no se publica en la barra superior', async () => {
+    await setup(true, 'no-existe');
+    expect(TestBed.inject(CurrentLocationService).location()).toBeNull();
+  });
+
+  it('una carga que termina tras salir de la página no vuelve a publicar la localización', async () => {
+    const f = await setup(true);
+    const current = TestBed.inject(CurrentLocationService);
+    vi.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+      afterClosed: () => of(true),
+    } as never);
+    const add = [...(f.nativeElement as HTMLElement).querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Añadir',
+    ) as HTMLButtonElement;
+    add.click();
+    f.destroy();
+    await new Promise((r) => setTimeout(r));
+    expect(current.location()).toBeNull();
   });
 
   it('una localización inexistente o deshabilitada muestra "no encontrada" sin acciones', async () => {
@@ -76,7 +165,7 @@ describe('LocationPage', () => {
     expect(el.querySelector('h1')?.textContent).toContain('Localización no encontrada');
     expect(el.querySelector('a[href="/"]')?.textContent).toContain('Volver a Inicio');
     const buttons = [...el.querySelectorAll('button, a')].map((b) => b.textContent?.trim());
-    for (const label of ['Añadir', 'Traer aquí', 'Baja', 'Salida por trabajo', 'Ver historial']) {
+    for (const label of ['Añadir', 'Mover', 'Eliminar', 'Salida']) {
       expect(buttons).not.toContain(label);
     }
   });
@@ -86,7 +175,6 @@ describe('LocationPage', () => {
     const rows = [...(f.nativeElement as HTMLElement).querySelectorAll('app-alert-list li')];
     expect(rows.length).toBe(1);
     expect(rows[0].textContent).toContain('Filtró de aire');
-    expect(rows[0].querySelector('a')).toBeNull();
   });
 
   it('si fallan los avisos, el stock se muestra igual y sin error', async () => {
@@ -188,7 +276,7 @@ describe('LocationPage', () => {
     await f.whenStable();
     f.detectChanges();
     const text = f.nativeElement.textContent as string;
-    expect(text).toContain('Furgoneta 1');
+    expect(TestBed.inject(CurrentLocationService).location()?.name).toBe('Furgoneta 1');
     expect(text).toContain('Bujía B');
     expect(text).not.toContain('Filtro A');
   });

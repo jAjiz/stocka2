@@ -3,7 +3,6 @@ import { ChangeDetectionStrategy, Component, inject, PendingTasks, signal } from
 import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom, map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { adminErrorMessage } from '../../core/db-errors';
@@ -24,24 +23,26 @@ export function userStatus(u: AdminUser): string {
 @Component({
   selector: 'app-users-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatCardModule, MatIconModule],
+  imports: [MatButtonModule, MatIconModule],
   styles: `
     .toolbar {
       display: flex;
       justify-content: flex-end;
       margin-bottom: 16px;
     }
-    .list {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    .name {
+      font: var(--mat-sys-title-small);
     }
-    .meta {
-      margin: 4px 0;
+    .email {
       color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-body-small);
+      overflow-wrap: anywhere;
     }
-    .status {
-      font: var(--mat-sys-label-large);
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 4px;
     }
     .inactive {
       opacity: 0.7;
@@ -49,8 +50,29 @@ export function userStatus(u: AdminUser): string {
     .error {
       color: var(--mat-sys-error);
     }
-    mat-card-actions {
-      flex-wrap: wrap;
+    @media (max-width: 599px) {
+      thead {
+        display: none;
+      }
+      tr,
+      td {
+        display: block;
+      }
+      tr {
+        padding: 8px 0;
+        border-top: 1px solid var(--mat-sys-outline-variant);
+      }
+      tr:first-child {
+        border-top: 0;
+      }
+      td {
+        height: auto;
+        padding: 2px 12px;
+        border-top: 0;
+      }
+      .actions {
+        justify-content: flex-start;
+      }
     }
   `,
   template: `
@@ -62,32 +84,45 @@ export function userStatus(u: AdminUser): string {
     @if (error()) {
       <p class="error" role="alert">{{ error() }}</p>
     }
-    <div class="list">
-      @for (u of users(); track u.id) {
-        <mat-card appearance="outlined" data-user [class.inactive]="!u.active">
-          <mat-card-header>
-            <mat-card-title>{{ u.displayName }}</mat-card-title>
-            <mat-card-subtitle>{{ u.email }}</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <p class="status">{{ status(u) }}</p>
-            <p class="meta">{{ u.role === 'admin' ? 'Administrador' : 'Usuario' }}</p>
-            <p class="meta">Localizaciones: {{ locationsLabel(u) }}</p>
-          </mat-card-content>
-          <mat-card-actions>
-            <button mat-button type="button" (click)="edit(u)">Editar</button>
-            @if (u.active) {
-              <button mat-button type="button" (click)="link(u)">Generar enlace de acceso</button>
-              @if (!isSelf(u)) {
-                <button mat-button type="button" (click)="setActive(u, false)">Desactivar</button>
-              }
-            } @else {
-              <button mat-button type="button" (click)="setActive(u, true)">Activar</button>
-            }
-          </mat-card-actions>
-        </mat-card>
-      }
-    </div>
+    <table class="app-table">
+      <thead>
+        <tr>
+          <th scope="col">Usuario</th>
+          <th scope="col">Rol</th>
+          <th scope="col">Estado</th>
+          <th scope="col" aria-label="Acciones"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of users(); track u.id) {
+          <tr data-user [class.inactive]="!u.active">
+            <td>
+              <div class="name">{{ u.displayName }}</div>
+              <div class="email">{{ u.email }}</div>
+            </td>
+            <td>{{ u.role === 'admin' ? 'Administrador' : 'Usuario' }}</td>
+            <td>{{ status(u) }}</td>
+            <td>
+              <div class="actions">
+                <button mat-button type="button" (click)="edit(u)">Editar</button>
+                @if (u.active) {
+                  <button mat-button type="button" (click)="link(u)">
+                    Generar enlace de acceso
+                  </button>
+                  @if (!isSelf(u)) {
+                    <button mat-button type="button" (click)="setActive(u, false)">
+                      Desactivar
+                    </button>
+                  }
+                } @else {
+                  <button mat-button type="button" (click)="setActive(u, true)">Activar</button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
   `,
 })
 export class UsersPage {
@@ -116,14 +151,6 @@ export class UsersPage {
   /** Uno mismo no se desactiva ni se quita el rol: perdería el acceso a esta página. */
   protected isSelf(u: AdminUser): boolean {
     return u.id === this.auth.profile()?.id;
-  }
-
-  protected locationsLabel(u: AdminUser): string {
-    if (u.role === 'admin') return 'Todas';
-    const names = this.locations()
-      .filter((l) => u.locationIds.includes(l.id))
-      .map((l) => l.name);
-    return names.length ? names.join(', ') : 'Ninguna';
   }
 
   protected async invite(): Promise<void> {

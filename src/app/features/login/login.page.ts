@@ -45,7 +45,7 @@ import { AuthService } from '../../core/auth.service';
     <mat-card appearance="outlined">
       <form (ngSubmit)="submit()">
         <h1>Stocka2</h1>
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>Correo</mat-label>
           <input
             matInput
@@ -56,7 +56,7 @@ import { AuthService } from '../../core/auth.service';
             [(ngModel)]="email"
           />
         </mat-form-field>
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>Contraseña</mat-label>
           <input
             matInput

@@ -67,13 +67,29 @@ const card = (el: HTMLElement, name: string) =>
   [...el.querySelectorAll('[data-user]')].find((c) => c.textContent?.includes(name)) as HTMLElement;
 
 describe('UsersPage', () => {
-  it('muestra el estado y las localizaciones de cada usuario', async () => {
+  it('muestra el estado y el rol de cada usuario', async () => {
     const { el } = await setup();
     expect(card(el, 'Pedro').textContent).toContain('Pendiente de acceso');
-    expect(card(el, 'Pedro').textContent).toContain('Furgoneta 1');
+    expect(card(el, 'Pedro').textContent).toContain('Usuario');
     expect(card(el, 'Diego').textContent).toContain('Desactivado');
     expect(card(el, 'Ana').textContent).toContain('Activo');
-    expect(card(el, 'Ana').textContent).toContain('Todas');
+    expect(card(el, 'Ana').textContent).toContain('Administrador');
+  });
+
+  it('no lista las localizaciones: se ven en el detalle', async () => {
+    const { el } = await setup();
+    expect(el.textContent).not.toContain('Localizaciones');
+    expect(card(el, 'Pedro').textContent).not.toContain('Furgoneta 1');
+  });
+
+  it('cada usuario es una fila de una tabla', async () => {
+    const { el } = await setup();
+    expect(el.querySelectorAll('table tbody tr[data-user]').length).toBe(3);
+  });
+
+  it('usa la tabla común', async () => {
+    const { el } = await setup();
+    expect(el.querySelector('table')?.classList).toContain('app-table');
   });
 
   it('un error al desactivar se muestra y la lista no cambia', async () => {

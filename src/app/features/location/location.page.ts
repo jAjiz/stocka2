@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   PendingTasks,
@@ -13,7 +14,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -21,6 +21,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { AuthService } from '../../core/auth.service';
+import { CurrentLocationService } from '../../core/current-location.service';
 import { dbErrorMessage } from '../../core/db-errors';
 import { AlertsService } from '../../data/alerts.service';
 import { CatalogService } from '../../data/catalog.service';
@@ -46,7 +47,6 @@ interface Line {
     AlertListComponent,
     RouterLink,
     MatButtonModule,
-    MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -56,42 +56,31 @@ interface Line {
   styles: `
     .actions {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       margin-bottom: 16px;
+    }
+    .actions button {
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: 160px;
+      padding-inline: 2px;
+    }
+    h2 {
+      margin-top: 20px;
     }
     .filters {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
+      margin-bottom: 16px;
     }
     .filters mat-form-field {
       flex: 1 1 220px;
     }
-    .cards {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .card-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 16px;
-    }
-    .name {
-      font: var(--mat-sys-title-medium);
-    }
-    .meta {
-      color: var(--mat-sys-on-surface-variant);
-      font: var(--mat-sys-body-small);
-    }
-    .qty {
-      font: var(--mat-sys-display-small);
-    }
-    table {
-      width: 100%;
+    @media (min-width: 600px) {
+      .filters mat-form-field {
+        max-width: 320px;
+      }
     }
     .error {
       color: var(--mat-sys-error);
@@ -99,7 +88,6 @@ interface Line {
   `,
   template: `
     @if (!allowed()) {
-      <h1>Localización</h1>
       <p>No tienes acceso a esta localización</p>
       <a mat-button routerLink="/">Volver a Inicio</a>
     } @else if (notFound()) {
@@ -107,32 +95,23 @@ interface Line {
       <p>La localización no existe o está deshabilitada.</p>
       <a mat-button routerLink="/">Volver a Inicio</a>
     } @else {
-      <h1>{{ locationName() }}</h1>
       <div class="actions">
         <button mat-flat-button type="button" (click)="openForm('add')">Añadir</button>
-        <button mat-stroked-button type="button" (click)="openForm('move')">Traer aquí</button>
-        <button mat-stroked-button type="button" (click)="openForm('remove')">Baja</button>
-        <button mat-stroked-button type="button" (click)="openForm('consume')">
-          Salida por trabajo
-        </button>
-        <a mat-stroked-button routerLink="/historial" [queryParams]="{ locationId: locationId() }">
-          Ver historial
-        </a>
+        <button mat-stroked-button type="button" (click)="openForm('move')">Mover</button>
+        <button mat-stroked-button type="button" (click)="openForm('remove')">Eliminar</button>
+        <button mat-stroked-button type="button" (click)="openForm('consume')">Salida</button>
       </div>
 
       @if (error()) {
         <p class="error" role="alert">{{ error() }}</p>
       }
 
-      <app-alert-list
-        [alerts]="locationAlerts()"
-        [itemNames]="itemNames()"
-        [locationNames]="locationNames()"
-        [showLocation]="false"
-      />
+      <app-alert-list [alerts]="locationAlerts()" [itemNames]="itemNames()" />
+
+      <h2>Inventario actual</h2>
 
       <div class="filters">
-        <mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Buscar</mat-label>
           <input
             matInput
@@ -142,7 +121,7 @@ interface Line {
             (input)="search.set($any($event.target).value)"
           />
         </mat-form-field>
-        <mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Tipo</mat-label>
           <mat-select [value]="typeFilter()" (selectionChange)="typeFilter.set($event.value)">
             <mat-option value="">Todos</mat-option>
@@ -157,46 +136,37 @@ interface Line {
         <p class="loading" role="status">Cargando…</p>
       }
 
-      @if (filtered().length === 0 && loaded() && !error()) {
-        <p>No hay artículos que mostrar.</p>
-      }
-
-      @if (isHandset()) {
-        <div class="cards">
-          @for (l of filtered(); track l.itemId) {
-            <mat-card appearance="outlined">
-              <div class="card-row">
-                <div>
-                  <div class="name">{{ l.name }}</div>
-                  <div class="meta">{{ l.typeName }}</div>
-                </div>
-                <div class="qty">{{ l.quantity }}</div>
-              </div>
-            </mat-card>
-          }
-        </div>
-      } @else {
-        <table mat-table matSort [dataSource]="filtered()" (matSortChange)="sort.set($event)">
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Artículo</th>
-            <td mat-cell *matCellDef="let l">{{ l.name }}</td>
-          </ng-container>
-          <ng-container matColumnDef="reference">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Referencia</th>
-            <td mat-cell *matCellDef="let l">{{ l.reference }}</td>
-          </ng-container>
-          <ng-container matColumnDef="typeName">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Tipo</th>
-            <td mat-cell *matCellDef="let l">{{ l.typeName }}</td>
-          </ng-container>
-          <ng-container matColumnDef="quantity">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Cantidad</th>
-            <td mat-cell *matCellDef="let l">{{ l.quantity }}</td>
-          </ng-container>
-          <tr mat-header-row *matHeaderRowDef="columns"></tr>
-          <tr mat-row *matRowDef="let row; columns: columns"></tr>
-        </table>
-      }
+      <table
+        class="app-table"
+        mat-table
+        matSort
+        [dataSource]="filtered()"
+        (matSortChange)="sort.set($event)"
+      >
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Artículo</th>
+          <td mat-cell *matCellDef="let l">
+            {{ l.name }}
+            @if (isHandset() && l.reference) {
+              <div class="sub">{{ l.reference }}</div>
+            }
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="reference">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Referencia</th>
+          <td mat-cell *matCellDef="let l">{{ l.reference }}</td>
+        </ng-container>
+        <ng-container matColumnDef="typeName">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Tipo</th>
+          <td mat-cell *matCellDef="let l">{{ l.typeName }}</td>
+        </ng-container>
+        <ng-container matColumnDef="quantity">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="num">Cantidad</th>
+          <td mat-cell *matCellDef="let l" class="num">{{ l.quantity }}</td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns()"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns()"></tr>
+      </table>
     }
   `,
 })
@@ -207,8 +177,14 @@ export class LocationPage {
   private readonly alertsService = inject(AlertsService);
   private readonly pending = inject(PendingTasks);
   private readonly dialog = inject(MatDialog);
+  private readonly current = inject(CurrentLocationService);
 
-  protected readonly columns = ['name', 'reference', 'typeName', 'quantity'];
+  /** En móvil no cabe la referencia. */
+  protected readonly columns = computed(() =>
+    this.isHandset()
+      ? ['name', 'typeName', 'quantity']
+      : ['name', 'reference', 'typeName', 'quantity'],
+  );
 
   private readonly locationId = toSignal(
     inject(ActivatedRoute).paramMap.pipe(map((p) => p.get('id') ?? '')),
@@ -222,7 +198,6 @@ export class LocationPage {
   );
 
   protected readonly allowed = computed(() => this.auth.canOperate(this.locationId()));
-  protected readonly locationName = signal('');
   /** El id no está entre las localizaciones activas (p. ej. un admin con un enlace antiguo). */
   protected readonly notFound = signal(false);
   protected readonly types = signal<ItemType[]>([]);
@@ -237,9 +212,6 @@ export class LocationPage {
   private readonly alerts = signal<StockAlert[]>([]);
 
   protected readonly itemNames = computed(() => new Map(this.items().map((i) => [i.id, i.name])));
-  protected readonly locationNames = computed(
-    () => new Map([[this.locationId(), this.locationName()]]),
-  );
   protected readonly locationAlerts = computed(() =>
     this.alerts().filter((a) => a.locationId === this.locationId()),
   );
@@ -286,6 +258,10 @@ export class LocationPage {
   });
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.requestSeq++; // Una carga en curso ya no debe publicar la localización.
+      this.current.location.set(null);
+    });
     effect(() => {
       const id = this.locationId();
       untracked(() => void this.pending.run(() => this.load(id)));
@@ -332,7 +308,7 @@ export class LocationPage {
     this.error.set('');
     if (!refresh) {
       this.notFound.set(false);
-      this.locationName.set('');
+      this.current.location.set(null);
       this.items.set([]);
       this.stock.set([]);
       this.alerts.set([]);
@@ -352,7 +328,7 @@ export class LocationPage {
       if (stale()) return;
       const location = locations.find((l) => l.id === id);
       this.notFound.set(!location);
-      this.locationName.set(location?.name ?? 'Localización');
+      this.current.location.set(location ? { name: location.name, kind: location.kind } : null);
       this.types.set(types);
       this.items.set(items);
       this.stock.set(stock);

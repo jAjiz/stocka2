@@ -10,6 +10,7 @@ async function setup(status: PushStatus = 'off') {
     session: signal({ user: { email: 'juan@x.es' } }),
     updateDisplayName: vi.fn().mockResolvedValue(undefined),
     setPassword: vi.fn().mockResolvedValue(undefined),
+    signOut: vi.fn().mockResolvedValue(undefined),
   };
   const push = {
     status: signal<PushStatus>(status),
@@ -43,6 +44,15 @@ describe('ProfilePage', () => {
     const { el, nameInput } = await setup();
     expect(el.textContent).toContain('juan@x.es');
     expect(nameInput.value).toBe('Juan');
+  });
+
+  it('permite cerrar sesión', async () => {
+    const { el, auth } = await setup();
+    const button = [...el.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Cerrar sesión',
+    ) as HTMLButtonElement;
+    button.click();
+    expect(auth.signOut).toHaveBeenCalled();
   });
 
   it('guarda el nombre recortado', async () => {

@@ -38,20 +38,28 @@ export interface CatalogRow {
       flex: 1;
       min-width: 200px;
     }
+    @media (min-width: 600px) {
+      .toolbar mat-form-field {
+        max-width: 320px;
+      }
+    }
     .row {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 4px 12px;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--mat-sys-outline-variant);
+      gap: 4px 10px;
+      padding: 8px 12px;
+      border-top: 1px solid var(--mat-sys-outline-variant);
+    }
+    .row:first-child {
+      border-top: 0;
     }
     .info {
       flex: 1;
       min-width: 180px;
     }
     .name {
-      font: var(--mat-sys-body-large);
+      font: var(--mat-sys-title-small);
     }
     .detail,
     .tag {
@@ -70,7 +78,7 @@ export interface CatalogRow {
   `,
   template: `
     <div class="toolbar">
-      <mat-form-field subscriptSizing="dynamic">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Buscar</mat-label>
         <input
           matInput
@@ -89,30 +97,36 @@ export interface CatalogRow {
     @if (error()) {
       <p class="error" role="alert">{{ error() }}</p>
     }
-    @for (r of visible(); track r.id) {
-      <div class="row" data-row [class.inactive]="!r.active">
-        @if (r.icon) {
-          <mat-icon aria-hidden="true">{{ r.icon }}</mat-icon>
+    @if (visible().length > 0) {
+      <div class="app-list">
+        @for (r of visible(); track r.id) {
+          <div class="row" data-row [class.inactive]="!r.active">
+            @if (r.icon) {
+              <span class="app-list-symbol"
+                ><mat-icon aria-hidden="true">{{ r.icon }}</mat-icon></span
+              >
+            }
+            <div class="info">
+              <div class="name">{{ r.name }}</div>
+              @if (r.detail) {
+                <div class="detail">{{ r.detail }}</div>
+              }
+              @if (!r.active) {
+                <div class="tag">{{ inactiveLabel() }}</div>
+              }
+            </div>
+            <button mat-button type="button" (click)="edit.emit(r.id)">Editar</button>
+            @if (duplicable()) {
+              <button mat-button type="button" (click)="duplicate.emit(r.id)">Duplicar</button>
+            }
+            <button mat-button type="button" (click)="toggle.emit(r.id)">
+              {{ r.active ? 'Deshabilitar' : 'Habilitar' }}
+            </button>
+            <button mat-button type="button" (click)="remove.emit(r.id)">Eliminar</button>
+          </div>
         }
-        <div class="info">
-          <div class="name">{{ r.name }}</div>
-          @if (r.detail) {
-            <div class="detail">{{ r.detail }}</div>
-          }
-          @if (!r.active) {
-            <div class="tag">{{ inactiveLabel() }}</div>
-          }
-        </div>
-        <button mat-button type="button" (click)="edit.emit(r.id)">Editar</button>
-        @if (duplicable()) {
-          <button mat-button type="button" (click)="duplicate.emit(r.id)">Duplicar</button>
-        }
-        <button mat-button type="button" (click)="toggle.emit(r.id)">
-          {{ r.active ? 'Deshabilitar' : 'Habilitar' }}
-        </button>
-        <button mat-button type="button" (click)="remove.emit(r.id)">Eliminar</button>
       </div>
-    } @empty {
+    } @else {
       <p class="empty">No hay resultados.</p>
     }
   `,

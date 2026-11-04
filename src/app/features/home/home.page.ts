@@ -1,82 +1,93 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/auth.service';
 import { dbErrorMessage } from '../../core/db-errors';
 import { AlertsService } from '../../data/alerts.service';
 import { CatalogService } from '../../data/catalog.service';
-import { Item, Location, StockAlert } from '../../data/models';
-import { AlertListComponent } from '../../shared/alert-list.component';
+import { Location, StockAlert } from '../../data/models';
 
 @Component({
   selector: 'app-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatCardModule, MatIconModule, AlertListComponent],
+  imports: [RouterLink, MatIconModule],
   styles: `
     .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 480px;
     }
-    a {
-      text-decoration: none;
-      color: inherit;
-    }
-    mat-card {
-      min-height: 96px;
-    }
-    .card-content {
+    .card {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 16px;
+      min-height: 64px;
+      padding: 0 16px;
+      background: var(--mat-sys-surface);
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: var(--app-radius);
+      color: inherit;
       font: var(--mat-sys-title-medium);
+      text-decoration: none;
     }
-    h2 {
-      font: var(--mat-sys-title-medium);
+    .card:hover {
+      border-color: var(--mat-sys-outline);
+    }
+    .symbol {
+      flex: none;
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--app-radius);
+      background: var(--app-bar);
+      color: var(--app-accent);
+    }
+    .name {
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
     .alert-count {
+      flex: none;
       margin-left: auto;
-      color: var(--mat-sys-on-surface-variant);
-      font: var(--mat-sys-body-medium);
+      padding: 2px 10px;
+      border-radius: 99px;
+      background: var(--app-warning-container);
+      color: var(--app-warning);
+      font: var(--mat-sys-label-medium);
+    }
+    .alert-count.critical {
+      background: var(--app-error-container);
+      color: var(--mat-sys-error);
     }
     .error {
       color: var(--mat-sys-error);
     }
   `,
   template: `
-    <h1>Inicio</h1>
-    @if (visibleAlerts().length > 0) {
-      <section class="alerts" aria-label="Avisos">
-        <h2>Avisos activos</h2>
-        <app-alert-list
-          [alerts]="visibleAlerts()"
-          [itemNames]="itemNames()"
-          [locationNames]="locationNames()"
-        />
-      </section>
-    }
     @if (error()) {
       <p class="error" role="alert">{{ error() }}</p>
     }
-    <div class="grid">
-      @for (l of visible(); track l.id) {
-        <a [routerLink]="['/localizaciones', l.id]">
-          <mat-card appearance="outlined">
-            <div class="card-content">
+    @if (visible().length > 0) {
+      <div class="grid">
+        @for (l of visible(); track l.id) {
+          <a class="card" [routerLink]="['/localizaciones', l.id]">
+            <span class="symbol">
               <mat-icon>{{ l.kind === 'vehicle' ? 'local_shipping' : 'warehouse' }}</mat-icon>
-              <span>{{ l.name }}</span>
-              @if (counts().get(l.id); as c) {
-                <span class="alert-count" [class.error]="c.critical">
-                  {{ c.total }} {{ c.total === 1 ? 'aviso' : 'avisos' }}
-                </span>
-              }
-            </div>
-          </mat-card>
-        </a>
-      }
-    </div>
+            </span>
+            <span class="name">{{ l.name }}</span>
+            @if (counts().get(l.id); as c) {
+              <span class="alert-count" [class.critical]="c.critical">
+                {{ c.total }} {{ c.total === 1 ? 'aviso' : 'avisos' }}
+              </span>
+            }
+          </a>
+        }
+      </div>
+    } @else if (loaded() && !error()) {
+      <p>No tienes localizaciones asignadas.</p>
+    }
   `,
 })
 export class HomePage {
@@ -85,26 +96,16 @@ export class HomePage {
   private readonly alertsService = inject(AlertsService);
 
   private readonly locations = signal<Location[]>([]);
+  private readonly alerts = signal<StockAlert[]>([]);
+  protected readonly loaded = signal(false);
   protected readonly error = signal('');
   protected readonly visible = computed(() =>
     this.locations().filter((l) => this.auth.canOperate(l.id)),
   );
 
-  private readonly alerts = signal<StockAlert[]>([]);
-  private readonly items = signal<Item[]>([]);
-
-  protected readonly itemNames = computed(() => new Map(this.items().map((i) => [i.id, i.name])));
-  protected readonly locationNames = computed(
-    () => new Map(this.locations().map((l) => [l.id, l.name])),
-  );
-  /** Solo los avisos de localizaciones visibles para el usuario. */
-  protected readonly visibleAlerts = computed(() => {
-    const ids = new Set(this.visible().map((l) => l.id));
-    return this.alerts().filter((a) => ids.has(a.locationId));
-  });
   protected readonly counts = computed(() => {
     const out = new Map<string, { total: number; critical: boolean }>();
-    for (const a of this.visibleAlerts()) {
+    for (const a of this.alerts()) {
       const c = out.get(a.locationId) ?? { total: 0, critical: false };
       c.total++;
       c.critical ||= a.level === 'critical';
@@ -116,14 +117,15 @@ export class HomePage {
   constructor() {
     this.catalog
       .locations()
-      .then((l) => this.locations.set(l))
+      .then((l) => {
+        this.locations.set(l);
+        this.loaded.set(true);
+      })
       .catch((e) => this.error.set(dbErrorMessage(e)));
     // Los avisos son accesorios: si fallan no impiden ver las localizaciones.
-    Promise.all([this.alertsService.active(), this.catalog.items()])
-      .then(([alerts, items]) => {
-        this.alerts.set(alerts);
-        this.items.set(items);
-      })
+    this.alertsService
+      .active()
+      .then((alerts) => this.alerts.set(alerts))
       .catch((e) => this.error.set(dbErrorMessage(e)));
   }
 }

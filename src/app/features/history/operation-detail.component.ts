@@ -30,19 +30,6 @@ export interface OperationDetailData {
     dd {
       margin: 0;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th,
-    td {
-      text-align: left;
-      padding: 6px 4px;
-      border-bottom: 1px solid var(--mat-sys-outline-variant);
-    }
-    .qty {
-      text-align: right;
-    }
     .error {
       color: var(--mat-sys-error);
     }
@@ -69,18 +56,18 @@ export interface OperationDetailData {
       } @else if (!loaded()) {
         <p role="status">Cargando…</p>
       } @else {
-        <table>
+        <table class="app-table">
           <thead>
             <tr>
-              <th>Artículo</th>
-              <th class="qty">Cantidad</th>
+              <th scope="col">Artículo</th>
+              <th scope="col" class="num">Cantidad</th>
             </tr>
           </thead>
           <tbody>
             @for (l of lines(); track l.itemId) {
               <tr>
                 <td>{{ data.itemNames.get(l.itemId) ?? 'Artículo deshabilitado' }}</td>
-                <td class="qty">{{ l.quantity }}</td>
+                <td class="num">{{ l.quantity }}</td>
               </tr>
             }
           </tbody>
