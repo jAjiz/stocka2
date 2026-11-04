@@ -6,7 +6,7 @@ import { AlertRule, Item, Location } from '../../data/models';
 import { dialogSize } from '../../shared/dialog-size';
 import { AlertRuleDialogComponent, AlertRuleDialogData } from './alert-rule-dialog.component';
 import { CatalogAdmin } from './catalog-admin';
-import { CatalogListComponent, CatalogRow } from './catalog-list.component';
+import { CatalogListComponent, CatalogRow, CatalogRowTag } from './catalog-list.component';
 
 @Component({
   selector: 'app-alert-rules-page',
@@ -40,7 +40,8 @@ export class AlertRulesPage extends CatalogAdmin {
     this.rules().map((r) => ({
       id: r.id,
       name: r.name,
-      detail: this.detail(r),
+      details: this.details(r),
+      tags: this.tags(r),
       active: r.active,
     })),
   );
@@ -61,20 +62,22 @@ export class AlertRulesPage extends CatalogAdmin {
     this.locations.set(locations);
   }
 
-  private detail(r: AlertRule): string {
+  private details(r: AlertRule): string[] {
     const names = r.locationIds
       .map((id) => this.locations().find((l) => l.id === id))
       .filter((l): l is Location => !!l)
       .map((l) => (l.active ? l.name : `${l.name} (deshabilitada)`));
-    const levels = [
-      r.warning !== null ? `Leve si menor o igual a ${r.warning}` : null,
-      r.critical !== null ? `Grave si menor o igual a ${r.critical}` : null,
-    ].filter((x) => x !== null);
     return [
-      r.allItems ? 'Artículos: Todos' : `Artículos: ${r.itemIds.length}`,
-      r.allLocations ? 'Localizaciones: Todas' : `Localizaciones: ${names.join(', ')}`,
-      levels.join(' · '),
-    ].join(' · ');
+      r.allItems ? 'Artículos: todos' : `Artículos: ${r.itemIds.length}`,
+      r.allLocations ? 'Localizaciones: todas' : `Localizaciones: ${names.join(', ')}`,
+    ];
+  }
+
+  private tags(r: AlertRule): CatalogRowTag[] {
+    const tags: CatalogRowTag[] = [];
+    if (r.warning !== null) tags.push({ label: `Leve con ${r.warning} o menos`, tone: 'warning' });
+    if (r.critical !== null) tags.push({ label: `Grave con ${r.critical} o menos`, tone: 'error' });
+    return tags;
   }
 
   protected byId(id: string): AlertRule {
@@ -85,7 +88,12 @@ export class AlertRulesPage extends CatalogAdmin {
     const saved = await firstValueFrom(
       this.dialog
         .open<AlertRuleDialogComponent, AlertRuleDialogData, boolean>(AlertRuleDialogComponent, {
-          data: { rule, copy, items: this.items(), locations: this.locations().filter((l) => l.active) },
+          data: {
+            rule,
+            copy,
+            items: this.items(),
+            locations: this.locations().filter((l) => l.active),
+          },
           disableClose: true,
           ...dialogSize(this.isHandset()),
         })

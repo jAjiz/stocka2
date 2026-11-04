@@ -5,14 +5,26 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { normalizeText } from '../../shared/format';
+import { RowAction, RowActionsComponent } from '../../shared/row-actions.component';
+
+export interface CatalogRowTag {
+  label: string;
+  tone?: 'warning' | 'error';
+}
 
 export interface CatalogRow {
   id: string;
   name: string;
-  /** Texto secundario (tipo, referencia…); también entra en la búsqueda. */
-  detail?: string;
+  /** Líneas de texto secundario (tipo, referencia…); también entran en la búsqueda. */
+  details?: string[];
+  /** Datos cortos que se muestran como etiquetas; también entran en la búsqueda. */
+  tags?: CatalogRowTag[];
   icon?: string;
   active: boolean;
+}
+
+function searchText(r: CatalogRow): string {
+  return [r.name, ...(r.details ?? []), ...(r.tags ?? []).map((t) => t.label)].join(' ');
 }
 
 /** Lista de administración con buscador, "Mostrar deshabilitados" y acciones por fila. */
@@ -25,6 +37,7 @@ export interface CatalogRow {
     MatIconModule,
     MatInputModule,
     MatSlideToggleModule,
+    RowActionsComponent,
   ],
   styles: `
     .toolbar {
@@ -41,6 +54,18 @@ export interface CatalogRow {
     @media (min-width: 600px) {
       .toolbar mat-form-field {
         max-width: 320px;
+      }
+    }
+    @media (max-width: 599px) {
+      .toolbar mat-form-field {
+        min-width: 0;
+      }
+      .toolbar button {
+        flex: none;
+      }
+      .toolbar mat-slide-toggle {
+        order: 1;
+        flex-basis: 100%;
       }
     }
     .row {
@@ -61,10 +86,26 @@ export interface CatalogRow {
     .name {
       font: var(--mat-sys-title-small);
     }
-    .detail,
-    .tag {
+    .detail {
       color: var(--mat-sys-on-surface-variant);
       font: var(--mat-sys-body-small);
+      overflow-wrap: anywhere;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    @media (max-width: 599px) {
+      .row {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        padding-right: 4px;
+      }
+      .info {
+        min-width: 0;
+      }
     }
     .inactive .name {
       color: var(--mat-sys-on-surface-variant);
@@ -108,21 +149,26 @@ export interface CatalogRow {
             }
             <div class="info">
               <div class="name">{{ r.name }}</div>
-              @if (r.detail) {
-                <div class="detail">{{ r.detail }}</div>
+              @for (d of r.details; track $index) {
+                <div class="detail">{{ d }}</div>
               }
-              @if (!r.active) {
-                <div class="tag">{{ inactiveLabel() }}</div>
+              @if (r.tags?.length || !r.active) {
+                <div class="tags">
+                  @for (t of r.tags; track t.label) {
+                    <span
+                      class="app-tag"
+                      [class.warning]="t.tone === 'warning'"
+                      [class.error]="t.tone === 'error'"
+                      >{{ t.label }}</span
+                    >
+                  }
+                  @if (!r.active) {
+                    <span class="app-tag">{{ inactiveLabel() }}</span>
+                  }
+                </div>
               }
             </div>
-            <button mat-button type="button" (click)="edit.emit(r.id)">Editar</button>
-            @if (duplicable()) {
-              <button mat-button type="button" (click)="duplicate.emit(r.id)">Duplicar</button>
-            }
-            <button mat-button type="button" (click)="toggle.emit(r.id)">
-              {{ r.active ? 'Deshabilitar' : 'Habilitar' }}
-            </button>
-            <button mat-button type="button" (click)="remove.emit(r.id)">Eliminar</button>
+            <app-row-actions [name]="r.name" [actions]="actionsOf(r)" />
           </div>
         }
       </div>
@@ -152,9 +198,19 @@ export class CatalogListComponent {
   protected readonly visible = computed(() => {
     const q = normalizeText(this.query());
     return this.rows().filter(
-      (r) =>
-        (this.showInactive() || r.active) &&
-        (!q || normalizeText(`${r.name} ${r.detail ?? ''}`).includes(q)),
+      (r) => (this.showInactive() || r.active) && (!q || normalizeText(searchText(r)).includes(q)),
     );
   });
+
+  protected actionsOf(r: CatalogRow): RowAction[] {
+    return [
+      { label: 'Editar', run: () => this.edit.emit(r.id) },
+      ...(this.duplicable() ? [{ label: 'Duplicar', run: () => this.duplicate.emit(r.id) }] : []),
+      {
+        label: r.active ? 'Deshabilitar' : 'Habilitar',
+        run: () => this.toggle.emit(r.id),
+      },
+      { label: 'Eliminar', run: () => this.remove.emit(r.id) },
+    ];
+  }
 }

@@ -33,7 +33,7 @@ export class ItemsPage extends CatalogAdmin {
     return this.items().map((i) => ({
       id: i.id,
       name: i.name,
-      detail: [typeNames.get(i.typeId), i.reference].filter(Boolean).join(' · '),
+      details: [[typeNames.get(i.typeId), i.reference].filter(Boolean).join(' · ')].filter(Boolean),
       active: i.active,
     }));
   });

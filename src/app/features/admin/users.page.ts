@@ -12,6 +12,7 @@ import { CatalogService } from '../../data/catalog.service';
 import { AccessLink, AdminUser, Location } from '../../data/models';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/confirm-dialog.component';
 import { dialogSize } from '../../shared/dialog-size';
+import { RowAction, RowActionsComponent } from '../../shared/row-actions.component';
 import { AccessLinkDialogComponent, AccessLinkDialogData } from './access-link-dialog.component';
 import { UserDialogComponent, UserDialogData, UserDialogResult } from './user-dialog.component';
 
@@ -23,7 +24,7 @@ export function userStatus(u: AdminUser): string {
 @Component({
   selector: 'app-users-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatIconModule],
+  imports: [MatButtonModule, MatIconModule, RowActionsComponent],
   styles: `
     .toolbar {
       display: flex;
@@ -38,12 +39,6 @@ export function userStatus(u: AdminUser): string {
       font: var(--mat-sys-body-small);
       overflow-wrap: anywhere;
     }
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 4px;
-    }
     .inactive {
       opacity: 0.7;
     }
@@ -51,27 +46,43 @@ export function userStatus(u: AdminUser): string {
       color: var(--mat-sys-error);
     }
     @media (max-width: 599px) {
-      thead {
-        display: none;
+      .toolbar button {
+        width: 100%;
       }
-      tr,
+      table,
+      tbody,
       td {
         display: block;
       }
+      thead {
+        display: none;
+      }
       tr {
-        padding: 8px 0;
+        display: grid;
+        grid-template-columns: auto auto 1fr auto;
+        gap: 6px 4px;
+        padding: 10px 4px 10px 12px;
         border-top: 1px solid var(--mat-sys-outline-variant);
       }
       tr:first-child {
         border-top: 0;
       }
-      td {
+      .app-table td {
         height: auto;
-        padding: 2px 12px;
+        padding: 0;
         border-top: 0;
       }
-      .actions {
-        justify-content: flex-start;
+      .app-table td.user {
+        grid-area: 1 / 1 / 2 / 4;
+      }
+      .app-table td.role {
+        grid-area: 2 / 1;
+      }
+      .app-table td.state {
+        grid-area: 2 / 2;
+      }
+      .app-table td.actions {
+        grid-area: 1 / 4 / 3 / 5;
       }
     }
   `,
@@ -96,28 +107,23 @@ export function userStatus(u: AdminUser): string {
       <tbody>
         @for (u of users(); track u.id) {
           <tr data-user [class.inactive]="!u.active">
-            <td>
+            <td class="user">
               <div class="name">{{ u.displayName }}</div>
               <div class="email">{{ u.email }}</div>
             </td>
-            <td>{{ u.role === 'admin' ? 'Administrador' : 'Usuario' }}</td>
-            <td>{{ status(u) }}</td>
-            <td>
-              <div class="actions">
-                <button mat-button type="button" (click)="edit(u)">Editar</button>
-                @if (u.active) {
-                  <button mat-button type="button" (click)="link(u)">
-                    Generar enlace de acceso
-                  </button>
-                  @if (!isSelf(u)) {
-                    <button mat-button type="button" (click)="setActive(u, false)">
-                      Desactivar
-                    </button>
-                  }
-                } @else {
-                  <button mat-button type="button" (click)="setActive(u, true)">Activar</button>
-                }
-              </div>
+            <td class="role">
+              <span class="app-tag">{{ u.role === 'admin' ? 'Administrador' : 'Usuario' }}</span>
+            </td>
+            <td class="state">
+              <span
+                class="app-tag"
+                [class.strong]="u.active && u.hasPassword"
+                [class.warning]="u.active && !u.hasPassword"
+                >{{ status(u) }}</span
+              >
+            </td>
+            <td class="actions">
+              <app-row-actions [name]="u.displayName" [actions]="actionsOf(u)" />
             </td>
           </tr>
         }
@@ -151,6 +157,15 @@ export class UsersPage {
   /** Uno mismo no se desactiva ni se quita el rol: perdería el acceso a esta página. */
   protected isSelf(u: AdminUser): boolean {
     return u.id === this.auth.profile()?.id;
+  }
+
+  protected actionsOf(u: AdminUser): RowAction[] {
+    const edit = { label: 'Editar', run: () => void this.edit(u) };
+    if (!u.active) return [edit, { label: 'Activar', run: () => void this.setActive(u, true) }];
+    const link = { label: 'Generar enlace de acceso', run: () => void this.link(u) };
+    return this.isSelf(u)
+      ? [edit, link]
+      : [edit, link, { label: 'Desactivar', run: () => void this.setActive(u, false) }];
   }
 
   protected async invite(): Promise<void> {

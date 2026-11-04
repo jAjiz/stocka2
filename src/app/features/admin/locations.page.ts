@@ -37,7 +37,7 @@ export class LocationsPage extends CatalogAdmin {
     this.locations().map((l) => ({
       id: l.id,
       name: l.name,
-      detail: KIND_LABEL[l.kind],
+      details: [KIND_LABEL[l.kind]],
       icon: KIND_ICON[l.kind],
       active: l.active,
     })),

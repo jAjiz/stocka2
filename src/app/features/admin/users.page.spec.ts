@@ -76,6 +76,25 @@ describe('UsersPage', () => {
     expect(card(el, 'Ana').textContent).toContain('Administrador');
   });
 
+  it('el rol y el estado son etiquetas y destaca quien tiene el acceso pendiente', async () => {
+    const { el } = await setup();
+    const tags = (name: string) =>
+      [...card(el, name).querySelectorAll('.app-tag')].map((t) => t.textContent?.trim());
+    expect(tags('Ana')).toEqual(['Administrador', 'Activo']);
+    expect(card(el, 'Pedro').querySelector('.app-tag.warning')?.textContent).toContain(
+      'Pendiente de acceso',
+    );
+    expect(card(el, 'Ana').querySelector('.app-tag.warning')).toBeNull();
+    expect(card(el, 'Diego').querySelector('.app-tag.warning')).toBeNull();
+  });
+
+  it('las acciones de un usuario se agrupan con su nombre', async () => {
+    const { el } = await setup();
+    expect(card(el, 'Ana').querySelector('.more')?.getAttribute('aria-label')).toBe(
+      'Acciones de Ana',
+    );
+  });
+
   it('no lista las localizaciones: se ven en el detalle', async () => {
     const { el } = await setup();
     expect(el.textContent).not.toContain('Localizaciones');
