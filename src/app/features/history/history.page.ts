@@ -82,15 +82,26 @@ interface FilterTag {
     .tags {
       margin-bottom: 12px;
     }
+    .toolbar .app-chip {
+      min-height: 36px;
+      padding: 0 12px;
+      font: var(--mat-sys-label-large);
+    }
+    /* En un móvil, sin este margen menor "Filtros" bajaría a otra línea. */
+    @media (max-width: 599px) {
+      .toolbar .app-chip {
+        padding: 0 8px;
+      }
+    }
     .filters-button {
       display: inline-flex;
       align-items: center;
       gap: 4px;
     }
     .filters-button mat-icon {
-      width: 16px;
-      height: 16px;
-      font-size: 16px;
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
     }
     .tag {
       display: inline-flex;

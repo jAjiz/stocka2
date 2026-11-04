@@ -74,19 +74,29 @@ describe('AlertRulesPage', () => {
   it('resume artículos, localizaciones y umbrales de cada regla', async () => {
     const { el } = await setup();
     const all = row(el, 'Stock general')!.textContent!;
-    expect(all).toContain('Artículos: Todos');
-    expect(all).toContain('Localizaciones: Todas');
-    expect(all).toContain('Grave si menor o igual a 1');
+    expect(all).toContain('Artículos: todos');
+    expect(all).toContain('Localizaciones: todas');
     expect(all).not.toContain('Leve');
     const some = row(el, 'Furgonetas')!.textContent!;
     expect(some).toContain('Artículos: 2');
     expect(some).toContain('Localizaciones: Taller, Furgoneta 1');
-    expect(some).toContain('Leve si menor o igual a 5 · Grave si menor o igual a 2');
+  });
+
+  it('muestra los umbrales como etiquetas de leve y grave', async () => {
+    const { el } = await setup();
+    const tag = (name: string, tone: string) =>
+      row(el, name)!.querySelector(`.app-tag.${tone}`)?.textContent?.trim();
+    expect(tag('Stock general', 'error')).toBe('Grave con 1 o menos');
+    expect(tag('Stock general', 'warning')).toBeUndefined();
+    expect(tag('Furgonetas', 'warning')).toBe('Leve con 5 o menos');
+    expect(tag('Furgonetas', 'error')).toBe('Grave con 2 o menos');
   });
 
   it('nombra las localizaciones deshabilitadas de una regla', async () => {
     const { el } = await setup();
-    expect(row(el, 'Viejas')!.textContent).toContain('Localizaciones: Almacén viejo (deshabilitada)');
+    expect(row(el, 'Viejas')!.textContent).toContain(
+      'Localizaciones: Almacén viejo (deshabilitada)',
+    );
   });
 
   it('muestra el error al eliminar sin permiso', async () => {

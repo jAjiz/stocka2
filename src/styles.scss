@@ -143,6 +143,30 @@ body {
   }
 }
 
+// Etiqueta pequeña con un dato de la fila: un rol, un estado, un umbral.
+.app-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--mat-sys-surface-variant);
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-small);
+
+  &.strong {
+    color: var(--mat-sys-on-surface);
+  }
+
+  &.warning {
+    background: var(--app-warning-container);
+    color: var(--app-warning);
+  }
+
+  &.error {
+    background: var(--app-error-container);
+    color: var(--app-on-error-container);
+  }
+}
+
 // Tabla común de la aplicación, tanto para tablas de Material como para tablas normales.
 .app-table {
   --mat-table-header-container-height: 36px;

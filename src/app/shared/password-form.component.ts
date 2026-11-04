@@ -18,7 +18,7 @@ export const MIN_PASSWORD_LENGTH = 8;
     }
   `,
   template: `
-    <form (submit)="submit($event)">
+    <form [attr.id]="formId()" (submit)="submit($event)">
       <mat-form-field appearance="outline">
         <mat-label>Nueva contraseña</mat-label>
         <input
@@ -47,14 +47,18 @@ export const MIN_PASSWORD_LENGTH = 8;
           <mat-hint class="error">Las contraseñas no coinciden.</mat-hint>
         }
       </mat-form-field>
-      <button mat-flat-button type="submit" [disabled]="!valid() || busy()">
-        Guardar contraseña
-      </button>
+      @if (!formId()) {
+        <button mat-flat-button type="submit" [disabled]="!valid() || busy()">
+          Guardar contraseña
+        </button>
+      }
     </form>
   `,
 })
 export class PasswordFormComponent {
   readonly busy = input(false);
+  /** Con un id, el botón de enviar lo pone quien lo usa (en las acciones de un diálogo). */
+  readonly formId = input<string>();
   readonly submitted = output<string>();
 
   protected readonly password = signal('');
@@ -66,15 +70,9 @@ export class PasswordFormComponent {
   protected readonly mismatch = computed(
     () => this.repeat().length > 0 && this.repeat() !== this.password(),
   );
-  protected readonly valid = computed(
+  readonly valid = computed(
     () => this.password().length >= MIN_PASSWORD_LENGTH && this.repeat() === this.password(),
   );
-
-  /** Vacía los campos (tras guardar con éxito). */
-  reset(): void {
-    this.password.set('');
-    this.repeat.set('');
-  }
 
   protected submit(event: Event): void {
     event.preventDefault();
