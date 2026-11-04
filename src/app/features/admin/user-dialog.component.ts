@@ -54,7 +54,7 @@ export type UserDialogResult = { link: AccessLink; name: string } | true;
     <mat-dialog-content>
       <form id="user-form" (submit)="save($event)">
         @if (!data.user) {
-          <mat-form-field>
+          <mat-form-field appearance="outline">
             <mat-label>Correo</mat-label>
             <input
               matInput
@@ -67,7 +67,7 @@ export type UserDialogResult = { link: AccessLink; name: string } | true;
         } @else {
           <p>{{ data.user.email }}</p>
         }
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>Nombre visible</mat-label>
           <input
             matInput

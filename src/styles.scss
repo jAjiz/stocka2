@@ -1,8 +1,5 @@
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
+// Tema de Angular Material más los ajustes del estilo de Stocka2: cabecera oscura, acento ámbar,
+// esquinas casi rectas y mucho contraste, pensado para usarse en la calle o en el almacén.
 @use '@angular/material' as mat;
 
 html {
@@ -10,30 +7,216 @@ html {
   @include mat.theme(
     (
       color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
+        primary: mat.$orange-palette,
+        tertiary: mat.$orange-palette,
       ),
-      typography: Roboto,
+      typography: Inter,
       density: 0,
     )
   );
+
+  // Colores propios de la aplicación.
+  --app-bar: #1f2933;
+  --app-on-bar: #ffffff;
+  --app-on-bar-muted: #c3ccd5;
+  --app-accent: #f5a524;
+  --app-background: #eef0f2;
+  --app-warning: #8f5a00;
+  --app-warning-container: #fdf0d5;
+  --app-warning-border: #ecd096;
+  --app-error-container: #fdecea;
+  --app-error-border: #f3b9b4;
+  --app-on-error-container: #8e1c15;
+  --app-radius: 6px;
+
+  // El ámbar no tiene contraste suficiente como texto sobre blanco: se usa en los rellenos, y como
+  // color primario (enlaces, pestañas, campos activos) va un ámbar oscuro.
+  --mat-sys-primary: #8f5a00;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: #fdf0d5;
+  --mat-sys-on-primary-container: #5c3a00;
+  --mat-sys-secondary-container: #fdf0d5;
+  --mat-sys-on-secondary-container: #5c3a00;
+  --mat-sys-surface: #ffffff;
+  --mat-sys-surface-variant: #e9ecef;
+  --mat-sys-surface-container: #f4f5f7;
+  --mat-sys-surface-container-low: #f4f5f7;
+  --mat-sys-surface-container-high: #e9ecef;
+  --mat-sys-surface-container-highest: #e4e7eb;
+  --mat-sys-on-surface: #1b2026;
+  --mat-sys-on-surface-variant: #5d6773;
+  --mat-sys-outline: #8a94a0;
+  --mat-sys-outline-variant: #d7dce1;
+  --mat-sys-error: #c8281e;
+
+  --mat-button-filled-container-color: var(--app-accent);
+  --mat-button-filled-label-text-color: var(--app-bar);
+  --mat-button-filled-state-layer-color: var(--app-bar);
+  --mat-button-filled-ripple-color: #1f293329;
+  --mat-button-filled-label-text-weight: 600;
+  --mat-button-outlined-label-text-color: var(--mat-sys-on-surface);
+  --mat-button-outlined-outline-color: var(--mat-sys-outline);
+  --mat-button-outlined-label-text-weight: 600;
+  --mat-button-filled-container-shape: var(--app-radius);
+  --mat-button-outlined-container-shape: var(--app-radius);
+  --mat-button-text-container-shape: var(--app-radius);
+  --mat-card-outlined-container-shape: var(--app-radius);
+  --mat-card-elevated-container-shape: var(--app-radius);
+  --mat-dialog-container-shape: var(--app-radius);
+  --mat-expansion-container-shape: var(--app-radius);
+  --mat-autocomplete-container-shape: var(--app-radius);
+  --mat-menu-container-shape: var(--app-radius);
+  --mat-form-field-container-height: 44px;
+  --mat-form-field-container-vertical-padding: 10px;
+  --mat-form-field-outlined-container-shape: var(--app-radius);
+  --mat-form-field-outlined-outline-color: var(--mat-sys-outline);
+  --mat-form-field-outlined-hover-outline-color: var(--mat-sys-on-surface-variant);
+  --mat-sidenav-content-background-color: var(--app-background);
+  --mat-sidenav-container-shape: 0;
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
   color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
+  background-color: var(--app-background);
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
   margin: 0;
   height: 100%;
 }
-/* You can add global styles to this file, and also import other style files */
+
+// Material no tiene un token para el fondo de los campos con contorno.
+.mdc-text-field--outlined {
+  background: var(--mat-sys-surface);
+  border-radius: var(--app-radius);
+}
+
+// La etiqueta de un campo con contorno sobresale por arriba: sin este margen el diálogo la recorta.
+.mat-mdc-dialog-container .mat-mdc-dialog-surface .mat-mdc-dialog-title + .mat-mdc-dialog-content {
+  padding-top: 8px;
+}
+
+// Botón de opción pequeño: se marca con aria-pressed.
+.app-chip {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--app-radius);
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-label-medium);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--mat-sys-outline);
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--app-bar);
+    background: var(--app-bar);
+    color: var(--app-on-bar);
+  }
+}
+
+// Lista común de la aplicación: el mismo marco que las tablas, para filas que no son columnas.
+.app-list {
+  overflow: hidden;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--app-radius);
+  background: var(--mat-sys-surface);
+}
+
+// Icono de una fila de la lista.
+.app-list-symbol {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--app-radius);
+  background: var(--app-bar);
+  color: var(--app-accent);
+
+  mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+}
+
+// Tabla común de la aplicación, tanto para tablas de Material como para tablas normales.
+.app-table {
+  --mat-table-header-container-height: 36px;
+  --mat-table-row-item-container-height: 40px;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--app-radius);
+  background: var(--mat-sys-surface);
+
+  th,
+  td {
+    box-sizing: border-box;
+    padding: 8px 12px;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+    border-bottom: 0;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  // Con el .mat-mdc-header-cell gana a la regla de Material, que hereda el fondo de la tabla.
+  th,
+  th.mat-mdc-header-cell {
+    height: 36px;
+    border-top: 0;
+    background: var(--mat-sys-surface-container);
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-label-medium);
+  }
+
+  td {
+    height: 40px;
+    font: var(--mat-sys-body-medium);
+  }
+
+  td:first-child {
+    font: var(--mat-sys-title-small);
+  }
+
+  // Dato secundario bajo el texto principal de una celda.
+  .sub {
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-small);
+    overflow-wrap: anywhere;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .num .mat-sort-header-container {
+    justify-content: flex-end;
+  }
+
+  // En un móvil se reduce el margen para que los textos tengan más sitio.
+  @media (max-width: 599px) {
+    th,
+    td {
+      padding-inline: 8px;
+    }
+  }
+}
+
+h1 {
+  margin: 0 0 16px;
+  font: var(--mat-sys-headline-small);
+  font-weight: 700;
+}
+
+h2 {
+  margin: 0 0 12px;
+  font: var(--mat-sys-title-medium);
+  font-weight: 700;
+}

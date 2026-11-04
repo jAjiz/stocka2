@@ -4,7 +4,7 @@ import { madridDayStartUtc, nextDay } from '../shared/dates';
 import { OperationInput, OperationKind, OperationLine, OperationSummary } from './models';
 
 export interface HistoryFilters {
-  kind?: OperationKind;
+  kinds?: OperationKind[];
   locationId?: string;
   originId?: string;
   destinationId?: string;
@@ -53,7 +53,7 @@ export class OperationsService {
     pageSize = 50,
   ): Promise<{ rows: OperationSummary[]; total: number }> {
     const { data, error } = await this.supabase.rpc('search_operations', {
-      p_kind: f.kind ?? null,
+      p_kinds: f.kinds?.length ? f.kinds : null,
       p_location_id: f.locationId ?? null,
       p_origin_id: f.originId ?? null,
       p_destination_id: f.destinationId ?? null,

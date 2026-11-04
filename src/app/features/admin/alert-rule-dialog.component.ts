@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+} from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
@@ -66,7 +69,7 @@ function parseThreshold(text: string): number | null {
     <h2 mat-dialog-title>{{ title }}</h2>
     <mat-dialog-content>
       <form id="rule-form" (submit)="save($event)">
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>Nombre</mat-label>
           <input
             matInput
@@ -80,7 +83,7 @@ function parseThreshold(text: string): number | null {
           Todos los artículos
         </mat-checkbox>
         @if (!allItems()) {
-          <mat-form-field>
+          <mat-form-field appearance="outline">
             <mat-label>Artículos</mat-label>
             <mat-chip-grid #grid aria-label="Artículos elegidos">
               @for (i of selectedItems(); track i.id) {
@@ -129,7 +132,7 @@ function parseThreshold(text: string): number | null {
           }
         }
 
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>Aviso leve si quedan</mat-label>
           <input
             matInput
@@ -141,7 +144,7 @@ function parseThreshold(text: string): number | null {
             (input)="warning.set($any($event.target).value)"
           />
         </mat-form-field>
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>Aviso grave si quedan</mat-label>
           <input
             matInput
@@ -263,7 +266,9 @@ export class AlertRuleDialogComponent {
       await this.alerts.saveRule(this.data.copy ? null : (this.data.rule?.id ?? null), {
         name: this.name().trim(),
         itemIds: this.allItems() ? null : [...this.itemIds(), ...this.hiddenItemIds],
-        locationIds: this.allLocations() ? null : [...this.locationIds(), ...this.hiddenLocationIds],
+        locationIds: this.allLocations()
+          ? null
+          : [...this.locationIds(), ...this.hiddenLocationIds],
         warning: parseThreshold(this.warning()),
         critical: parseThreshold(this.critical()),
       });

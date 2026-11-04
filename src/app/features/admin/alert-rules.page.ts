@@ -67,8 +67,8 @@ export class AlertRulesPage extends CatalogAdmin {
       .filter((l): l is Location => !!l)
       .map((l) => (l.active ? l.name : `${l.name} (deshabilitada)`));
     const levels = [
-      r.warning !== null ? `Leve ≤ ${r.warning}` : null,
-      r.critical !== null ? `Grave ≤ ${r.critical}` : null,
+      r.warning !== null ? `Leve si menor o igual a ${r.warning}` : null,
+      r.critical !== null ? `Grave si menor o igual a ${r.critical}` : null,
     ].filter((x) => x !== null);
     return [
       r.allItems ? 'Artículos: Todos' : `Artículos: ${r.itemIds.length}`,

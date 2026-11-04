@@ -44,6 +44,22 @@ export interface OperationFormData {
     form {
       display: contents;
     }
+    .location-band {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: none;
+      min-height: 48px;
+      padding: 0 16px;
+      background: var(--app-bar);
+      border-bottom: 3px solid var(--app-accent);
+      color: var(--app-on-bar);
+      font: var(--mat-sys-title-medium);
+    }
+    .location-band mat-icon {
+      flex: none;
+      color: var(--app-accent);
+    }
     mat-form-field {
       width: 100%;
     }
@@ -51,10 +67,11 @@ export interface OperationFormData {
       display: flex;
       align-items: flex-start;
       gap: 8px;
+      margin-bottom: 8px;
     }
     .line .name {
       flex: 1 1 auto;
-      padding-top: 16px;
+      padding-top: 12px;
       min-width: 0;
       overflow-wrap: anywhere;
     }
@@ -63,7 +80,7 @@ export interface OperationFormData {
       width: 110px;
     }
     .line button {
-      margin-top: 4px;
+      margin-top: -2px;
     }
     .hint {
       color: var(--mat-sys-on-surface-variant);
@@ -73,13 +90,17 @@ export interface OperationFormData {
     }
     .new-item {
       border: 1px solid var(--mat-sys-outline-variant);
-      border-radius: 8px;
+      border-radius: var(--app-radius);
       padding: 12px;
       margin: 8px 0;
     }
   `,
   template: `
     <form (submit)="$event.preventDefault(); submit()">
+      <div class="location-band">
+        <mat-icon>{{ location()?.kind === 'vehicle' ? 'local_shipping' : 'warehouse' }}</mat-icon>
+        <span>{{ location()?.name }}</span>
+      </div>
       <h2 mat-dialog-title>{{ title() }}</h2>
       <mat-dialog-content>
         @if (loadError()) {
@@ -87,7 +108,7 @@ export interface OperationFormData {
         }
 
         @if (data.kind === 'move') {
-          <mat-form-field>
+          <mat-form-field appearance="outline">
             <mat-label>Origen</mat-label>
             <mat-select [value]="originId()" (selectionChange)="setOrigin($event.value)">
               @for (l of origins(); track l.id) {
@@ -95,9 +116,13 @@ export interface OperationFormData {
               }
             </mat-select>
           </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Destino</mat-label>
+            <input matInput name="destination" disabled [value]="location()?.name ?? ''" />
+          </mat-form-field>
         }
 
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>Buscar artículo</mat-label>
           <input
             matInput
@@ -133,7 +158,7 @@ export interface OperationFormData {
             </button>
           } @else {
             <div class="new-item">
-              <mat-form-field>
+              <mat-form-field appearance="outline">
                 <mat-label>Nombre</mat-label>
                 <input
                   matInput
@@ -141,7 +166,7 @@ export interface OperationFormData {
                   (input)="newName.set($any($event.target).value)"
                 />
               </mat-form-field>
-              <mat-form-field>
+              <mat-form-field appearance="outline">
                 <mat-label>Tipo</mat-label>
                 <mat-select [value]="newType()" (selectionChange)="newType.set($event.value)">
                   @for (t of types(); track t.id) {
@@ -149,7 +174,7 @@ export interface OperationFormData {
                   }
                 </mat-select>
               </mat-form-field>
-              <mat-form-field>
+              <mat-form-field appearance="outline">
                 <mat-label>Referencia (opcional)</mat-label>
                 <input
                   matInput
@@ -176,7 +201,7 @@ export interface OperationFormData {
         @for (l of lines(); track l.itemId) {
           <div class="line">
             <div class="name">{{ itemName(l.itemId) }}</div>
-            <mat-form-field class="qty" subscriptSizing="dynamic">
+            <mat-form-field appearance="outline" class="qty" subscriptSizing="dynamic">
               <mat-label>Cantidad</mat-label>
               <input
                 matInput
@@ -205,7 +230,7 @@ export interface OperationFormData {
         }
 
         @if (data.kind === 'consume') {
-          <mat-form-field>
+          <mat-form-field appearance="outline">
             <mat-label>Referencia (opcional)</mat-label>
             <input
               matInput
@@ -214,7 +239,7 @@ export interface OperationFormData {
             />
           </mat-form-field>
         }
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>Notas (opcional)</mat-label>
           <textarea
             matInput
@@ -270,18 +295,20 @@ export class OperationFormComponent implements OnInit {
   protected readonly newType = signal('');
   protected readonly newRef = signal('');
 
+  protected readonly location = computed(() =>
+    this.locations().find((l) => l.id === this.data.locationId),
+  );
+
   protected readonly title = computed(() => {
     switch (this.data.kind) {
       case 'add':
         return 'Añadir material';
-      case 'move': {
-        const name = this.locations().find((l) => l.id === this.data.locationId)?.name ?? '';
-        return `Traer material a ${name}`.trim();
-      }
+      case 'move':
+        return 'Mover material';
       case 'remove':
-        return 'Dar de baja material';
+        return 'Eliminar material';
       case 'consume':
-        return 'Registrar salida por trabajo';
+        return 'Registrar salida';
     }
   });
 

@@ -1,7 +1,7 @@
 begin;
 \ir _helpers.sql
 select tests.clear_seed();
-select plan(19);
+select plan(21);
 
 select tests.create_user('boss@stocka2.test', 'admin') as admin_id \gset
 
@@ -62,6 +62,9 @@ select is((select id from public.search_operations(p_item_id => :'b')), :'op1'::
 select is((select count(*)::int from public.search_operations(p_item_id => :'a')), 4, 'p_item_id=A: 4');
 select is((select id from public.search_operations(p_reference => 'ot-7')), :'op3'::uuid, 'p_reference ilike');
 select is((select id from public.search_operations(p_kind => 'move')), :'op2'::uuid, 'p_kind=move');
+select is((select array_agg(id order by created_at) from public.search_operations(p_kinds => array['move', 'remove'])),
+  array[:'op2', :'op4']::uuid[], 'p_kinds: varios tipos a la vez');
+select is((select count(*)::int from public.search_operations(p_kinds => array[]::text[])), 0, 'p_kinds vacío: ningún tipo');
 select is((select id from public.search_operations(p_origin_id => :'t')), :'op2'::uuid, 'p_origin_id=T');
 select is((select id from public.search_operations(p_destination_id => :'t')), :'op1'::uuid, 'p_destination_id=T');
 select is((select count(*)::int from public.search_operations(p_user_id => :'admin_id')), 4, 'p_user_id');
@@ -78,10 +81,10 @@ select tests.logout();
 
 -- Permisos de ejecución
 select ok(not has_function_privilege('anon',
-  'public.search_operations(text, uuid, uuid, uuid, uuid, uuid, timestamptz, timestamptz, text, int, int)', 'execute'),
+  'public.search_operations(text, uuid, uuid, uuid, uuid, uuid, timestamptz, timestamptz, text, int, int, text[])', 'execute'),
   'anon sin execute');
 select ok(has_function_privilege('authenticated',
-  'public.search_operations(text, uuid, uuid, uuid, uuid, uuid, timestamptz, timestamptz, text, int, int)', 'execute'),
+  'public.search_operations(text, uuid, uuid, uuid, uuid, uuid, timestamptz, timestamptz, text, int, int, text[])', 'execute'),
   'authenticated con execute');
 
 select * from finish();

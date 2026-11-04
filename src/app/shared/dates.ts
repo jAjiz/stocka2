@@ -36,6 +36,21 @@ export function nextDay(d: Date): Date {
   return new Date(Date.UTC(y, m, day + 1));
 }
 
+/** Día (medianoche UTC) sumando `days`, que pueden ser negativos. */
+export function addDays(d: Date, days: number): Date {
+  const { y, m, d: day } = dayParts(d);
+  return new Date(Date.UTC(y, m, day + days));
+}
+
+/** Día (medianoche UTC) que es en Madrid en el instante dado. */
+export function madridDay(instant: Date): Date {
+  const p: Record<string, number> = {};
+  for (const part of madridParts.formatToParts(instant)) {
+    if (part.type !== 'literal') p[part.type] = Number(part.value);
+  }
+  return new Date(Date.UTC(p['year'], p['month'] - 1, p['day']));
+}
+
 /** Instante UTC en que empieza el día dado (00:00 hora de Madrid). */
 export function madridDayStartUtc(d: Date): Date {
   const { y, m, d: day } = dayParts(d);

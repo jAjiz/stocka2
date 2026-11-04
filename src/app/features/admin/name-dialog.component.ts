@@ -46,7 +46,7 @@ export interface NameDialogData {
     <h2 mat-dialog-title>{{ data.title }}</h2>
     <mat-dialog-content>
       <form id="name-form" (submit)="save($event)">
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>Nombre</mat-label>
           <input
             matInput
@@ -56,7 +56,7 @@ export interface NameDialogData {
           />
         </mat-form-field>
         @if (has('kind')) {
-          <mat-form-field>
+          <mat-form-field appearance="outline">
             <mat-label>Tipo de localización</mat-label>
             <mat-select [value]="kind()" (valueChange)="kind.set($event)">
               <mat-option value="warehouse">Almacén</mat-option>
@@ -65,7 +65,7 @@ export interface NameDialogData {
           </mat-form-field>
         }
         @if (has('type')) {
-          <mat-form-field>
+          <mat-form-field appearance="outline">
             <mat-label>Tipo</mat-label>
             <mat-select [value]="typeId()" (valueChange)="typeId.set($event)">
               @for (t of data.types ?? []; track t.id) {
@@ -75,7 +75,7 @@ export interface NameDialogData {
           </mat-form-field>
         }
         @if (has('reference')) {
-          <mat-form-field>
+          <mat-form-field appearance="outline">
             <mat-label>Referencia (opcional)</mat-label>
             <input
               matInput

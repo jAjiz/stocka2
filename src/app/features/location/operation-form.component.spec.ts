@@ -4,11 +4,12 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../../core/auth.service';
 import { CatalogService } from '../../data/catalog.service';
+import { OperationKind } from '../../data/models';
 import { OperationsService } from '../../data/operations.service';
 import { StockService } from '../../data/stock.service';
 import { OperationFormComponent } from './operation-form.component';
 
-async function setup(preselect = true) {
+async function setup(preselect = true, kind: OperationKind = 'remove') {
   let resolve!: (v: string) => void;
   let reject!: (e: unknown) => void;
   const perform = vi.fn(
@@ -23,7 +24,7 @@ async function setup(preselect = true) {
   const open = vi.fn();
   TestBed.configureTestingModule({
     providers: [
-      { provide: MAT_DIALOG_DATA, useValue: { kind: 'remove', locationId: 'l1' } },
+      { provide: MAT_DIALOG_DATA, useValue: { kind, locationId: 'l1' } },
       { provide: MatDialogRef, useValue: { close } },
       { provide: MatSnackBar, useValue: { open } },
       { provide: AuthService, useValue: { isAdmin: signal(false) } },
@@ -68,6 +69,40 @@ async function setup(preselect = true) {
 }
 
 describe('OperationFormComponent', () => {
+  const titles: [OperationKind, string][] = [
+    ['add', 'Añadir material'],
+    ['move', 'Mover material'],
+    ['remove', 'Eliminar material'],
+    ['consume', 'Registrar salida'],
+  ];
+  for (const [kind, title] of titles) {
+    it(`${kind}: muestra arriba la localización y el título "${title}"`, async () => {
+      const s = await setup(false, kind);
+      const el = s.fixture.nativeElement as HTMLElement;
+      const band = el.querySelector('.location-band') as HTMLElement;
+      expect(band.textContent).toContain('Taller');
+      expect(el.querySelector('h2')?.textContent?.trim()).toBe(title);
+      expect(band.compareDocumentPosition(el.querySelector('h2') as HTMLElement)).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    });
+  }
+
+  it('al mover, Destino es la localización actual y no se puede cambiar', async () => {
+    const s = await setup(false, 'move');
+    const input = (s.fixture.nativeElement as HTMLElement).querySelector(
+      'input[name="destination"]',
+    ) as HTMLInputElement;
+    expect(input.value).toBe('Taller');
+    expect(input.disabled).toBe(true);
+  });
+
+  it('solo al mover aparece Destino', async () => {
+    const s = await setup(false, 'remove');
+    const el = s.fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('input[name="destination"]')).toBeNull();
+  });
+
   it('doble clic en Confirmar llama una sola vez y bloquea el botón', async () => {
     const s = await setup();
     expect(s.button().disabled).toBe(false);

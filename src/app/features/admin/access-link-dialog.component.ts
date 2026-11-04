@@ -31,7 +31,7 @@ export interface AccessLinkDialogData {
     <h2 mat-dialog-title>Enlace de acceso</h2>
     <mat-dialog-content>
       <p>Envía este enlace a {{ data.name }}. Al abrirlo podrá crear su contraseña.</p>
-      <mat-form-field>
+      <mat-form-field appearance="outline">
         <mat-label>Enlace</mat-label>
         <input #urlInput matInput readonly [value]="data.link.url" (focus)="urlInput.select()" />
       </mat-form-field>

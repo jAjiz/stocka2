@@ -48,13 +48,12 @@ import { PasswordFormComponent } from '../../shared/password-form.component';
     }
   `,
   template: `
-    <h1>Perfil</h1>
     <p class="email">{{ email() }}</p>
     <mat-card appearance="outlined">
       <mat-card-header><mat-card-title>Nombre visible</mat-card-title></mat-card-header>
       <mat-card-content>
         <form (submit)="saveName($event)">
-          <mat-form-field>
+          <mat-form-field appearance="outline">
             <mat-label>Nombre visible</mat-label>
             <input
               matInput
@@ -120,6 +119,7 @@ import { PasswordFormComponent } from '../../shared/password-form.component';
         }
       </mat-card-content>
     </mat-card>
+    <button mat-stroked-button type="button" (click)="signOut()">Cerrar sesión</button>
   `,
 })
 export class ProfilePage {
@@ -135,6 +135,11 @@ export class ProfilePage {
   protected readonly passwordError = signal<string | null>(null);
   protected readonly pushError = signal<string | null>(null);
   private readonly passwordForm = viewChild.required(PasswordFormComponent);
+
+  /** La navegación a /login la hace el shell al quedar la sesión en null. */
+  protected async signOut(): Promise<void> {
+    await this.auth.signOut();
+  }
 
   protected async saveName(event: Event): Promise<void> {
     event.preventDefault();
