@@ -7,6 +7,7 @@ import { AlertRuleDialogComponent } from './alert-rule-dialog.component';
 const rule: AlertRule = {
   id: 'r1',
   name: 'Tornillos',
+  scope: 'location',
   allItems: true,
   allLocations: true,
   itemIds: [],
@@ -80,6 +81,7 @@ describe('AlertRuleDialogComponent', () => {
     await fixture.whenStable();
     expect(alerts.saveRule).toHaveBeenCalledWith(null, {
       name: 'Tornillos',
+      scope: 'location',
       itemIds: null,
       locationIds: null,
       warning: null,
@@ -117,6 +119,7 @@ describe('AlertRuleDialogComponent', () => {
     await fixture.whenStable();
     expect(alerts.saveRule).toHaveBeenCalledWith('r1', {
       name: 'Otro nombre',
+      scope: 'location',
       itemIds: ['i1', 'iOld'],
       locationIds: ['lOld'],
       warning: null,

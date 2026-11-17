@@ -11,6 +11,7 @@ async function setup() {
       {
         id: 'r1',
         name: 'Stock general',
+        scope: 'location',
         allItems: true,
         allLocations: true,
         itemIds: [],
@@ -22,6 +23,7 @@ async function setup() {
       {
         id: 'r2',
         name: 'Furgonetas',
+        scope: 'location',
         allItems: false,
         allLocations: false,
         itemIds: ['i1', 'i2'],
@@ -33,6 +35,7 @@ async function setup() {
       {
         id: 'r3',
         name: 'Viejas',
+        scope: 'location',
         allItems: true,
         allLocations: false,
         itemIds: [],

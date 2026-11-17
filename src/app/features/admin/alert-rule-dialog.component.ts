@@ -265,6 +265,7 @@ export class AlertRuleDialogComponent {
     try {
       await this.alerts.saveRule(this.data.copy ? null : (this.data.rule?.id ?? null), {
         name: this.name().trim(),
+        scope: 'location',
         itemIds: this.allItems() ? null : [...this.itemIds(), ...this.hiddenItemIds],
         locationIds: this.allLocations()
           ? null
