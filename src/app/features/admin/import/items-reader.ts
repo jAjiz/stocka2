@@ -1,4 +1,4 @@
-import type { CellValue, Worksheet } from 'exceljs';
+import type { Cell, CellValue, Worksheet } from 'exceljs';
 import { normalizeText } from '../../../shared/format';
 import { ITEMS_HEADERS, ITEMS_SHEET, MAX_IMPORT_ROWS } from './items-template';
 
@@ -32,9 +32,9 @@ export async function readItemsFile(data: ArrayBuffer): Promise<ImportRow[]> {
   const rows: ImportRow[] = [];
   for (let r = 2; r <= ws.rowCount; r++) {
     const row = ws.getRow(r);
-    const name = cellText(row.getCell(nameCol).value);
-    const type = cellText(row.getCell(typeCol).value);
-    const reference = referenceCol ? cellText(row.getCell(referenceCol).value) : '';
+    const name = readCell(row.getCell(nameCol));
+    const type = readCell(row.getCell(typeCol));
+    const reference = referenceCol ? readCell(row.getCell(referenceCol)) : '';
     if (!name && !type && !reference) continue;
     rows.push({ row: r, name, type, reference });
     if (rows.length > MAX_IMPORT_ROWS) {
@@ -52,6 +52,19 @@ function findColumn(ws: Worksheet, header: string): number | null {
     if (normalizeText(cellText(row.getCell(c).value)) === wanted) return c;
   }
   return null;
+}
+
+/**
+ * Como cellText, pero un número con formato de ceros («00000») conserva los ceros a la izquierda
+ * que se ven en Excel: las referencias suelen ser códigos, no cantidades.
+ */
+function readCell(cell: Cell): string {
+  const v = cell.value;
+  const fmt = cell.numFmt ?? '';
+  if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && /^0+$/.test(fmt)) {
+    return String(v).padStart(fmt.length, '0');
+  }
+  return cellText(v);
 }
 
 /** Texto visible de una celda, sea cual sea el tipo con que Excel la guardó. */

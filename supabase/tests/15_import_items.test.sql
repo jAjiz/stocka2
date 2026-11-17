@@ -1,7 +1,7 @@
 begin;
 \ir _helpers.sql
 select tests.clear_seed();
-select plan(15);
+select plan(16);
 
 select tests.create_user('admin@stocka2.test', 'admin') as a \gset
 select tests.create_user('u@stocka2.test') as u \gset
@@ -50,10 +50,16 @@ select throws_ok($$select public.admin_import_items('[
 select throws_ok($$select public.admin_import_items('[
     {"name": "  ", "type_id": "00000000-0000-0000-0000-0000000000b1", "reference": null}
   ]'::jsonb)$$, 'P0001', 'invalid_input', 'nombre vacío');
-select throws_ok($$select public.admin_import_items('[
-    {"name": "Codo", "type_id": "00000000-0000-0000-0000-0000000000b1", "reference": null},
-    {"name": "Códo", "type_id": "00000000-0000-0000-0000-0000000000b1", "reference": null}
-  ]'::jsonb)$$, 'P0001', 'invalid_input', 'nombres repetidos dentro de la importación');
+-- Repetidos según normalize_name (comillas tipográficas que el cliente puede no plegar):
+-- se saltan en vez de rechazar todo; gana el primero.
+select is(public.admin_import_items($$[
+    {"name": "Tubo 1/2\"", "type_id": "00000000-0000-0000-0000-0000000000b1", "reference": "A"},
+    {"name": "Tubo 1/2”", "type_id": "00000000-0000-0000-0000-0000000000b1", "reference": "B"}
+  ]$$::jsonb), '{"created": 1, "skipped": 1}'::jsonb,
+  'los nombres repetidos dentro de la importación se saltan');
+select is((select reference from public.items
+           where public.normalize_name(name) = public.normalize_name('Tubo 1/2"') and active), 'A',
+  'se queda el primero');
 select throws_ok($$select public.admin_import_items('[]'::jsonb)$$, 'P0001', 'invalid_input', 'lista vacía');
 select throws_ok($$select public.admin_import_items('{"name": "X"}'::jsonb)$$, 'P0001', 'invalid_input',
   'no es un array');

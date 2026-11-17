@@ -54,7 +54,7 @@ fija y desplegable de tipos activos, más instrucciones) y se importa: vista pre
 (Nuevo, Ya existe, Error con su motivo), importación de todo o nada con `admin_import_items` y
 resumen final. Solo crea artículos; no carga stock. ExcelJS se carga bajo demanda.
 
-Verificado: 307 pruebas pgTAP (15 archivos), 336 pruebas Vitest (44 archivos), `pnpm build` sin
+Verificado: 308 pruebas pgTAP (15 archivos), 337 pruebas Vitest (44 archivos), `pnpm build` sin
 avisos y recorrido manual a 1280 px y 375 px (plantilla descargada, archivo con un error de
 tipo, importación corregida, reimportación con todo «Ya existe»).
 

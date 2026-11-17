@@ -23,13 +23,19 @@ begin
   create temporary table import_rows on commit drop as
   select nullif(trim(x->>'name'), '') as name,
          (x->>'type_id')::uuid as type_id,
-         nullif(trim(x->>'reference'), '') as reference
-  from jsonb_array_elements(p_items) x;
+         nullif(trim(x->>'reference'), '') as reference,
+         n
+  from jsonb_array_elements(p_items) with ordinality as e(x, n);
 
-  if exists (select 1 from import_rows where name is null)
-     or (select count(distinct public.normalize_name(name)) from import_rows) <> v_total then
+  if exists (select 1 from import_rows where name is null) then
     raise exception using errcode = 'P0001', message = 'invalid_input';
   end if;
+
+  -- Repetidos dentro de la importación según normalize_name (que pliega más que el cliente, p. ej.
+  -- comillas tipográficas): se saltan en vez de rechazar todo; gana el primero.
+  delete from import_rows r
+  using import_rows f
+  where public.normalize_name(f.name) = public.normalize_name(r.name) and f.n < r.n;
 
   -- for share: impide que los tipos se deshabiliten mientras se crean los artículos
   perform 1 from public.item_types t

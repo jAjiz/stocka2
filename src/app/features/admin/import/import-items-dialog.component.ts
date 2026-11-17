@@ -211,16 +211,19 @@ export class ImportItemsDialogComponent {
     this.busy.set(true);
     this.error.set('');
     try {
-      const items = this.rows()
-        .filter((r) => r.status === 'new')
-        .map((r) => ({ name: r.name, typeId: r.typeId!, reference: r.reference }));
-      const { created, skipped } = await this.admin.importItems(items);
-      // «Ya existían»: las marcadas en la vista previa más las que otro creó entretanto
-      this.result.set({ created, skipped: skipped + this.counts().exists });
+      // Se envían todas las filas válidas, también las «Ya existe»: el servidor decide con
+      // normalize_name, que pliega más que normalizeText (comillas tipográficas, ligaduras…),
+      // así que la vista previa es orientativa y el resumen sale de su respuesta.
+      const items = this.rows().map((r) => ({
+        name: r.name,
+        typeId: r.typeId!,
+        reference: r.reference,
+      }));
+      this.result.set(await this.admin.importItems(items));
     } catch (e) {
+      // La vista previa se conserva para poder revisar el archivo.
       const code = (e as { message?: unknown } | null)?.message;
       this.error.set(code === 'inactive_type' ? INACTIVE_TYPE : adminErrorMessage(e));
-      this.rows.set([]);
     } finally {
       this.busy.set(false);
     }

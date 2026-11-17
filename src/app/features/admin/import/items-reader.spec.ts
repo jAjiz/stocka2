@@ -54,6 +54,16 @@ describe('readItemsFile', () => {
     expect(row.reference).toBe('4001');
   });
 
+  it('una referencia numérica con formato de ceros conserva los ceros a la izquierda', async () => {
+    const wb = new Workbook();
+    const ws = wb.addWorksheet('Artículos');
+    ws.addRow(['Nombre', 'Tipo', 'Referencia']);
+    ws.addRow(['A', 'T', 123]);
+    ws.getCell('C2').numFmt = '00000';
+    const [row] = await readItemsFile((await wb.xlsx.writeBuffer()) as ArrayBuffer);
+    expect(row.reference).toBe('00123');
+  });
+
   it('el texto enriquecido y las fórmulas se leen como su texto visible', async () => {
     const [row] = await readItemsFile(
       await xlsx([

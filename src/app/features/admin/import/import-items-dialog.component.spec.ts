@@ -85,21 +85,24 @@ describe('ImportItemsDialogComponent', () => {
     expect(button('Importar')?.disabled).toBe(true);
   });
 
-  it('importa solo las filas nuevas y muestra el resumen', async () => {
+  it('envía todas las filas válidas, también las que ya existen, y muestra el resumen del servidor', async () => {
     const { el, fixture, admin, ref, choose, button } = await setup(async () => [
       row(2, 'Tubo', 'Fontanería', 'T-1'),
       row(3, 'Codo'),
       row(4, 'Grifo'),
     ]);
+    admin.importItems.mockResolvedValueOnce({ created: 2, skipped: 1 });
     await choose();
     button('Importar')!.click();
     await fixture.whenStable();
     fixture.detectChanges();
+    // El servidor decide con normalize_name, que pliega más que el cliente: la vista previa es
+    // orientativa y el resumen sale de su respuesta.
     expect(admin.importItems).toHaveBeenCalledWith([
       { name: 'Tubo', typeId: 't1', reference: 'T-1' },
+      { name: 'Codo', typeId: 't1', reference: '' },
       { name: 'Grifo', typeId: 't1', reference: '' },
     ]);
-    // «Ya existían» suma las filas marcadas en la vista previa y las que el servidor saltó
     expect(el.textContent).toContain('Creados 2 · Ya existían 1');
     expect(el.querySelector('table')).toBeNull();
     button('Cerrar')!.click();
@@ -129,17 +132,17 @@ describe('ImportItemsDialogComponent', () => {
     expect(button('Elegir archivo')).toBeDefined();
   });
 
-  it('el resumen suma las que ya existían en la vista previa y las creadas entretanto', async () => {
+  it('si el servidor rechaza la importación, la vista previa se conserva', async () => {
     const { el, fixture, admin, choose, button } = await setup(async () => [
       row(2, 'Tubo'),
-      row(3, 'Codo'),
-      row(4, 'Grifo'),
+      row(3, 'Grifo'),
     ]);
-    admin.importItems.mockResolvedValueOnce({ created: 1, skipped: 1 });
+    admin.importItems.mockRejectedValueOnce({ message: 'invalid_input' });
     await choose();
     button('Importar')!.click();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(el.textContent).toContain('Creados 1 · Ya existían 2');
+    expect(el.querySelector('[role=alert]')).not.toBeNull();
+    expect(el.querySelectorAll('tbody tr').length).toBe(2);
   });
 });
