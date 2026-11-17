@@ -1,4 +1,4 @@
-import { ApplicationRef } from '@angular/core';
+import { ApplicationRef, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { CatalogListComponent, CatalogRow } from './catalog-list.component';
 
@@ -84,5 +84,22 @@ describe('CatalogListComponent', () => {
     const el = await setup([]);
     expect(el.querySelector('.app-list')).toBeNull();
     expect(el.textContent).toContain('No hay resultados.');
+  });
+
+  it('proyecta las acciones extra en la barra, antes del botón de añadir', async () => {
+    @Component({
+      imports: [CatalogListComponent],
+      template: `<app-catalog-list [rows]="[]" addLabel="Añadir"
+        ><button catalogActions type="button">Extra</button></app-catalog-list
+      >`,
+    })
+    class Host {}
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const buttons = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll('.toolbar > button'),
+    ].map((b) => b.textContent?.trim());
+    expect(buttons).toEqual(['Extra', 'addAñadir']);
   });
 });

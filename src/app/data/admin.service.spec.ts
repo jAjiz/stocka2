@@ -60,4 +60,20 @@ describe('AdminService', () => {
     fake.rpc.mockResolvedValueOnce({ data: null, error: { message: 'location_in_use' } });
     await expect(service.deleteLocation('l1')).rejects.toEqual({ message: 'location_in_use' });
   });
+
+  it('importItems mapea a p_items y devuelve los recuentos', async () => {
+    const { service, fake } = setup(null);
+    fake.rpc.mockResolvedValueOnce({ data: { created: 2, skipped: 1 }, error: null });
+    const result = await service.importItems([
+      { name: 'Tubo', typeId: 't1', reference: 'T-1' },
+      { name: 'Codo', typeId: 't1', reference: '' },
+    ]);
+    expect(fake.rpc).toHaveBeenCalledWith('admin_import_items', {
+      p_items: [
+        { name: 'Tubo', type_id: 't1', reference: 'T-1' },
+        { name: 'Codo', type_id: 't1', reference: null },
+      ],
+    });
+    expect(result).toEqual({ created: 2, skipped: 1 });
+  });
 });

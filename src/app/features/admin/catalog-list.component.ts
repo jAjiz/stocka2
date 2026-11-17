@@ -131,6 +131,7 @@ function searchText(r: CatalogRow): string {
       <mat-slide-toggle [checked]="showInactive()" (change)="showInactive.set($event.checked)">
         Mostrar deshabilitados
       </mat-slide-toggle>
+      <ng-content select="[catalogActions]" />
       <button mat-flat-button type="button" (click)="add.emit()">
         <mat-icon>add</mat-icon>{{ addLabel() }}
       </button>

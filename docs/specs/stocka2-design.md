@@ -220,7 +220,7 @@ La interfaz se adapta al tamaño de pantalla, no al tipo de dispositivo (con `Br
    - Las localizaciones sin permiso no se pueden abrir para operar.
 4. **Stock global (solo lectura):** cada artículo con una columna **Total** (la suma de todas las localizaciones activas) y su cantidad en cada localización activa. En ordenador la columna Total va después de Tipo, y en móvil, después del nombre del artículo, siempre antes de las localizaciones. Muestra los avisos globales (sección 6, «Avisos globales»).
 5. **Historial** (sección 7).
-6. **Administración** (solo administradores): usuarios e invitaciones, localizaciones, artículos, tipos de artículo, reglas de aviso e **importación inicial** (sección 8.1).
+6. **Administración** (solo administradores): usuarios e invitaciones, localizaciones, artículos, tipos de artículo, reglas de aviso e **importación de artículos** desde una plantilla Excel (sección 8.1).
 7. **Perfil:** nombre visible, cambio de contraseña y activación de notificaciones en el dispositivo.
 
 Orientación por tamaño de pantalla:
@@ -232,16 +232,33 @@ Orientación por tamaño de pantalla:
 | Formularios de operación | pantalla completa, botones grandes, por pasos si conviene | diálogo o panel en una sola vista |
 | Historial | lista resumida | tabla con todos los filtros |
 
-### 8.1 Importación de inventario
+### 8.1 Importación de artículos
 
-Habrá una carga inicial de inventario (decisión del usuario), pero todavía no se sabe si vendrá en CSV o en Excel.
+**Para qué:** dar de alta muchos artículos de una vez (la carga inicial del catálogo y, más adelante, tandas grandes de artículos nuevos) sin crearlos uno a uno. No existe un formato previo: el formato lo define la propia aplicación con una plantilla.
 
-- Admite **CSV y Excel (.xlsx)**. El archivo se lee en el navegador (por ejemplo con SheetJS), sin subirlo a ningún servidor.
-- Formato esperado: una fila por artículo y localización, con las columnas `nombre`, `tipo`, `referencia` (opcional), `localizacion` y `cantidad`. La aplicación ofrece una plantilla descargable con ese formato. Si el archivo real tiene otras columnas, se adapta antes de importar.
-- Antes de importar se muestra una **vista previa** con los errores por fila (localización inexistente, cantidad no válida, filas duplicadas). No se importa nada hasta que no haya errores y el administrador confirme.
-- Los tipos de artículo y los artículos que no existan se crean. Las localizaciones tienen que existir de antemano.
-- El stock entra como operaciones **"Añadir" normales**, una por localización, con una nota del tipo "Importación inicial (archivo X)". Así el historial queda completo y no se salta ninguna regla.
-- La importación está disponible siempre en la administración, no solo la primera vez. Sirve también para entradas grandes de material.
+**Alcance:** la importación **solo crea artículos** (nombre, tipo y referencia). **No mueve stock**: las cantidades se registran después con operaciones normales desde cada localización. Solo la usan los administradores.
+
+**Dónde:** en Administración → Artículos, junto a «Nuevo artículo», dos acciones: **Descargar plantilla** e **Importar**. Está disponible siempre, no solo la primera vez.
+
+**Plantilla (.xlsx):**
+- La genera la aplicación en el navegador en el momento de descargarla. Decisión de diseño: con **ExcelJS**, que admite listas desplegables y estilos.
+- Hoja **«Artículos»** con tres columnas en este orden: **Nombre** (obligatoria), **Tipo** (obligatoria) y **Referencia** (opcional). Cabecera destacada y fija al desplazarse, y columnas con un ancho cómodo de leer.
+- La columna Tipo es una **lista desplegable** con los tipos de artículo **activos** en el momento de la descarga.
+- Hoja **«Instrucciones»** breve: qué es obligatorio, que los tipos salen de la lista, que los artículos que ya existan se saltan y que la importación no carga cantidades.
+- Nombre del archivo: `plantilla-articulos.xlsx`.
+
+**Importar:**
+- Solo se aceptan archivos **.xlsx** (decisión de diseño: el formato es nuestro, así que no hace falta CSV). Se lee la hoja «Artículos» en el navegador, sin subir el archivo a ningún servidor, buscando las columnas por el texto de su cabecera.
+- Se quitan los espacios sobrantes y se ignoran las filas vacías. Como máximo **2000 filas** con datos por archivo (decisión de diseño); un archivo con más se rechaza entero, sin vista previa.
+- Los tipos se reconocen sin distinguir mayúsculas.
+- Antes de importar se muestra una **vista previa** con una fila por artículo y su estado:
+  - **Nuevo:** se creará.
+  - **Ya existe:** ya hay un artículo activo con ese nombre (sin distinguir mayúsculas ni acentos). Se salta y el artículo existente no se modifica. Un artículo **deshabilitado** con el mismo nombre no cuenta: la fila sale como «Nuevo», igual que al crear un artículo a mano (decisión de diseño).
+  - **Error:** nombre vacío, tipo vacío, tipo que no existe o está deshabilitado, o nombre repetido dentro del propio archivo. Se indica el motivo.
+- Mientras haya alguna fila con **Error** no se puede importar: se corrige el archivo y se vuelve a cargar (decisión de diseño). Las filas «Ya existe» no bloquean.
+- Al confirmar, todos los artículos nuevos se crean **en una sola transacción**: o se crean todos o ninguno. Si entretanto alguien ha creado uno con el mismo nombre, ese se cuenta como «ya existía» en vez de fallar. Si entretanto se ha deshabilitado o borrado alguno de los tipos, la importación entera falla con un mensaje claro y no se crea nada (decisión de diseño).
+- Al terminar se muestra un resumen, por ejemplo: «Creados 37 · Ya existían 3».
+- Si el archivo no es un .xlsx válido o le falta la hoja o alguna cabecera obligatoria, se muestra un error claro y no aparece vista previa.
 
 ## 9. Despliegue y entornos
 

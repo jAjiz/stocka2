@@ -2,13 +2,22 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { AdminService } from '../../data/admin.service';
 import { CatalogService } from '../../data/catalog.service';
 import { Item, ItemType } from '../../data/models';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { firstValueFrom } from 'rxjs';
+import { dialogSize } from '../../shared/dialog-size';
 import { CatalogAdmin } from './catalog-admin';
+import {
+  ImportItemsDialogComponent,
+  ImportItemsDialogData,
+} from './import/import-items-dialog.component';
+import { ITEMS_TEMPLATE_DOWNLOAD } from './import/items-template';
 import { CatalogListComponent, CatalogRow } from './catalog-list.component';
 
 @Component({
   selector: 'app-items-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CatalogListComponent],
+  imports: [CatalogListComponent, MatButtonModule, MatIconModule],
   template: `
     <app-catalog-list
       addLabel="Nuevo artículo"
@@ -18,12 +27,38 @@ import { CatalogListComponent, CatalogRow } from './catalog-list.component';
       (edit)="open(byId($event))"
       (toggle)="toggle(byId($event))"
       (remove)="remove(byId($event))"
-    />
+    >
+      <button
+        catalogActions
+        mat-stroked-button
+        type="button"
+        aria-label="Descargar plantilla"
+        (click)="downloadTemplate()"
+      >
+        <mat-icon>download</mat-icon>
+        @if (!isHandset()) {
+          Descargar plantilla
+        }
+      </button>
+      <button
+        catalogActions
+        mat-stroked-button
+        type="button"
+        aria-label="Importar"
+        (click)="openImport()"
+      >
+        <mat-icon>upload_file</mat-icon>
+        @if (!isHandset()) {
+          Importar
+        }
+      </button>
+    </app-catalog-list>
   `,
 })
 export class ItemsPage extends CatalogAdmin {
   private readonly admin = inject(AdminService);
   private readonly catalog = inject(CatalogService);
+  private readonly downloadTemplateFile = inject(ITEMS_TEMPLATE_DOWNLOAD);
 
   private readonly items = signal<Item[]>([]);
   private readonly types = signal<ItemType[]>([]);
@@ -76,5 +111,30 @@ export class ItemsPage extends CatalogAdmin {
 
   protected async remove(i: Item): Promise<void> {
     if (await this.confirmDelete(i.name)) await this.run(() => this.admin.deleteItem(i.id));
+  }
+
+  protected async downloadTemplate(): Promise<void> {
+    this.error.set(null);
+    try {
+      await this.downloadTemplateFile(this.types());
+    } catch {
+      this.error.set('No se ha podido generar la plantilla.');
+    }
+  }
+
+  protected async openImport(): Promise<void> {
+    const created = await firstValueFrom(
+      this.dialog
+        .open<ImportItemsDialogComponent, ImportItemsDialogData, boolean>(
+          ImportItemsDialogComponent,
+          {
+            data: { types: this.types(), items: this.items() },
+            disableClose: true,
+            ...dialogSize(this.isHandset()),
+          },
+        )
+        .afterClosed(),
+    );
+    if (created) await this.refresh();
   }
 }
