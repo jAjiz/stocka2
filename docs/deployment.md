@@ -3,7 +3,8 @@
 Orden de la puesta en marcha:
 
 1. **Supabase**: crea el proyecto, aplica las migraciones (`pnpm exec supabase link` y
-   `pnpm exec supabase db push`) y sigue las secciones de Supabase de abajo, hasta
+   `pnpm exec supabase db push --remote`; sin `--remote` la CLI aplica las migraciones al
+   Supabase local) y sigue las secciones de Supabase de abajo, hasta
    «Notificaciones push» incluida.
 2. **Cloudflare**: conecta el repositorio (sección «Cloudflare»).
 3. **Primer administrador** (última sección).

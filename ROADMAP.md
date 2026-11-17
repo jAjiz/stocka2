@@ -33,8 +33,8 @@ una operación deja stock en nivel grave. El envío usa un outbox, `pg_net` y la
 perfil y un aviso para iPhone; cerrar sesión olvida el dispositivo.
 
 Verificado: 270 pruebas pgTAP (13 archivos), 152 pruebas Vitest (29 archivos), prueba de humo
-de las Edge Functions (`pnpm test:functions`, 34 comprobaciones) y `pnpm build` correcto. El
-recorrido manual con notificaciones push reales y la instalación de la PWA sigue pendiente.
+de las Edge Functions (`pnpm test:functions`, 34 comprobaciones) y `pnpm build` correcto. Las
+notificaciones push reales y la instalación de la PWA se comprobaron en producción (plan 6).
 
 ### Plan 4 — Totales y avisos globales
 
@@ -71,6 +71,6 @@ Verificado: 5 pruebas de `set-env` (`pnpm test:scripts`), 337 pruebas Vitest, `p
 
 ## Pendiente
 
-- **Primer despliegue real** siguiendo `docs/deployment.md`.
-- **Prueba manual en producción** del service worker, la instalación de la PWA y las
-  notificaciones push reales (el panel de navegador de desarrollo no registra service workers).
+Nada. La app está desplegada en `https://stocka2.jajiz.workers.dev`; en el móvil se comprobaron
+el inicio de sesión del primer administrador, las invitaciones, la instalación de la PWA y las
+notificaciones push reales.
