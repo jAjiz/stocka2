@@ -43,6 +43,8 @@ function payload(row: OutboxRow): string {
       title: row.title,
       body: row.body,
       icon: '/icons/icon-192x192.png',
+      // Silueta monocroma para la barra de estado de Android.
+      badge: '/icons/badge-96x96.png',
       data: {
         onActionClick: {
           default: { operation: 'navigateLastFocusedOrOpen', url: row.url },
