@@ -69,7 +69,11 @@ export class AlertRulesPage extends CatalogAdmin {
       .map((l) => (l.active ? l.name : `${l.name} (deshabilitada)`));
     return [
       r.allItems ? 'Artículos: todos' : `Artículos: ${r.itemIds.length}`,
-      r.allLocations ? 'Localizaciones: todas' : `Localizaciones: ${names.join(', ')}`,
+      r.scope === 'global'
+        ? 'Alcance: total de todas las localizaciones'
+        : r.allLocations
+          ? 'Localizaciones: todas'
+          : `Localizaciones: ${names.join(', ')}`,
     ];
   }
 

@@ -33,6 +33,18 @@ async function setup() {
         active: true,
       },
       {
+        id: 'r4',
+        name: 'Pedir al proveedor',
+        scope: 'global',
+        allItems: true,
+        allLocations: true,
+        itemIds: [],
+        locationIds: [],
+        warning: 10,
+        critical: 3,
+        active: true,
+      },
+      {
         id: 'r3',
         name: 'Viejas',
         scope: 'location',
@@ -112,5 +124,12 @@ describe('AlertRulesPage', () => {
     fixture.detectChanges();
     expect(alerts.deleteRule).toHaveBeenCalledWith('r2');
     expect(el.textContent).toContain('Solo un administrador activo puede hacer esto.');
+  });
+
+  it('una regla global muestra su alcance en lugar de las localizaciones', async () => {
+    const { el } = await setup();
+    const text = row(el, 'Pedir al proveedor')!.textContent!;
+    expect(text).toContain('Alcance: total de todas las localizaciones');
+    expect(text).not.toContain('Localizaciones:');
   });
 });

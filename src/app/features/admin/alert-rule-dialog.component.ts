@@ -10,9 +10,10 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatRadioModule } from '@angular/material/radio';
 import { adminErrorMessage } from '../../core/db-errors';
 import { AlertsService } from '../../data/alerts.service';
-import { AlertRule, Item, Location } from '../../data/models';
+import { AlertRule, AlertScope, Item, Location } from '../../data/models';
 import { normalizeText } from '../../shared/format';
 
 export interface AlertRuleDialogData {
@@ -47,6 +48,7 @@ function parseThreshold(text: string): number | null {
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatRadioModule,
   ],
   styles: `
     form {
@@ -55,7 +57,8 @@ function parseThreshold(text: string): number | null {
       gap: 8px;
       padding-top: 8px;
     }
-    .locations {
+    .locations,
+    .scope {
       display: flex;
       flex-direction: column;
     }
@@ -113,22 +116,35 @@ function parseThreshold(text: string): number | null {
           }
         }
 
-        <mat-checkbox [checked]="allLocations()" (change)="allLocations.set($event.checked)">
-          Todas las localizaciones
-        </mat-checkbox>
-        @if (!allLocations()) {
-          <div class="locations">
-            @for (l of data.locations; track l.id) {
-              <mat-checkbox
-                [checked]="locationIds().includes(l.id)"
-                (change)="toggleLocation(l.id, $event.checked)"
-              >
-                {{ l.name }}
-              </mat-checkbox>
+        <mat-radio-group
+          class="scope"
+          aria-label="Alcance"
+          [value]="scope()"
+          (change)="scope.set($event.value)"
+        >
+          <mat-radio-button value="location">Por localización</mat-radio-button>
+          <mat-radio-button value="global"
+            >Global (total de todas las localizaciones)</mat-radio-button
+          >
+        </mat-radio-group>
+        @if (scope() === 'location') {
+          <mat-checkbox [checked]="allLocations()" (change)="allLocations.set($event.checked)">
+            Todas las localizaciones
+          </mat-checkbox>
+          @if (!allLocations()) {
+            <div class="locations">
+              @for (l of data.locations; track l.id) {
+                <mat-checkbox
+                  [checked]="locationIds().includes(l.id)"
+                  (change)="toggleLocation(l.id, $event.checked)"
+                >
+                  {{ l.name }}
+                </mat-checkbox>
+              }
+            </div>
+            @if (locationIds().length + hiddenLocationIds.length === 0) {
+              <p class="error">Elige al menos una localización.</p>
             }
-          </div>
-          @if (locationIds().length + hiddenLocationIds.length === 0) {
-            <p class="error">Elige al menos una localización.</p>
           }
         }
 
@@ -186,6 +202,7 @@ export class AlertRuleDialogComponent {
   protected readonly name = signal(
     this.data.rule ? this.data.rule.name + (this.data.copy ? ' (copia)' : '') : '',
   );
+  protected readonly scope = signal<AlertScope>(this.data.rule?.scope ?? 'location');
   protected readonly allItems = signal(this.data.rule?.allItems ?? true);
   protected readonly allLocations = signal(this.data.rule?.allLocations ?? true);
   // Los ids que no están entre los elegibles (artículos o localizaciones deshabilitados)
@@ -238,7 +255,9 @@ export class AlertRuleDialogComponent {
       !!this.name().trim() &&
       !this.thresholdsError() &&
       (this.allItems() || this.itemIds().length + this.hiddenItemIds.length > 0) &&
-      (this.allLocations() || this.locationIds().length + this.hiddenLocationIds.length > 0),
+      (this.scope() === 'global' ||
+        this.allLocations() ||
+        this.locationIds().length + this.hiddenLocationIds.length > 0),
   );
 
   protected addItem(event: MatAutocompleteSelectedEvent): void {
@@ -265,11 +284,12 @@ export class AlertRuleDialogComponent {
     try {
       await this.alerts.saveRule(this.data.copy ? null : (this.data.rule?.id ?? null), {
         name: this.name().trim(),
-        scope: 'location',
+        scope: this.scope(),
         itemIds: this.allItems() ? null : [...this.itemIds(), ...this.hiddenItemIds],
-        locationIds: this.allLocations()
-          ? null
-          : [...this.locationIds(), ...this.hiddenLocationIds],
+        locationIds:
+          this.scope() === 'global' || this.allLocations()
+            ? null
+            : [...this.locationIds(), ...this.hiddenLocationIds],
         warning: parseThreshold(this.warning()),
         critical: parseThreshold(this.critical()),
       });
