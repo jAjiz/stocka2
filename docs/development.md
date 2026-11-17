@@ -16,6 +16,7 @@ pnpm db:reset        # reinicia la base de datos local (migraciones + seed)
 pnpm db:test         # pruebas de base de datos (supabase test db)
 pnpm test:functions  # pruebas de humo de las Edge Functions admin-users y send-push (tras db:reset)
 pnpm ng build        # compilación
+pnpm test:scripts    # pruebas de los scripts de Node (scripts/*.test.mjs)
 pnpm serve:pwa       # build de producción con claves de desarrollo en http://localhost:4300 (service worker y push)
 ```
 
