@@ -36,9 +36,17 @@ Verificado: 270 pruebas pgTAP (13 archivos), 152 pruebas Vitest (29 archivos), p
 de las Edge Functions (`pnpm test:functions`, 34 comprobaciones) y `pnpm build` correcto. El
 recorrido manual con notificaciones push reales y la instalación de la PWA sigue pendiente.
 
+### Plan 4 — Totales y avisos globales
+
+Columna Total en el stock global y reglas de aviso con alcance global, que comparan los
+umbrales con el total del artículo en todas las localizaciones activas. Sus avisos los ven
+todos los usuarios: el total en rojo o naranja, el botón «Solo con aviso (N)» y un número en el
+enlace Stock que se actualiza tras cada operación. No envían push ni aparecen en Inicio.
+
+Verificado: 292 pruebas pgTAP (14 archivos), 293 pruebas Vitest (39 archivos), `pnpm build`
+correcto y recorrido manual a 1280 px y 375 px (usuario sin permisos de administrador, salida
+que pasa el número a rojo sin recargar y diálogo de reglas con alcance).
+
 ## Pendiente
 
-- **Plan 4 — Totales y avisos globales:** columna Total en el stock global y reglas de aviso
-  sobre el total de todas las localizaciones, visibles en la pantalla de stock y en su icono,
-  sin push.
 - **Plan 5 — Importación CSV/Excel y despliegue** en Cloudflare.
