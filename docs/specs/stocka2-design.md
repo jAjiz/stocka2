@@ -263,12 +263,20 @@ Orientación por tamaño de pantalla:
 ## 9. Despliegue y entornos
 
 - Repositorio en el GitHub del desarrollador. Cada push a `main` despliega en Cloudflare.
+- **Cómo se despliega** (decisión del desarrollador: integración Git de Cloudflare, Workers Builds, en vez de GitHub Actions):
+  - Un Worker con static assets, sin código de Worker, definido en `wrangler.jsonc` en la raíz. Sirve `dist/stocka2/browser` con `not_found_handling: "single-page-application"`, de modo que `/acceso?t=…` y la recarga de cualquier ruta cargan la app.
+  - Comando de build en Cloudflare: `pnpm test --watch=false && node scripts/set-env.mjs && pnpm build`. Las pruebas van dentro del build: si fallan, no se publica nada. Comando de deploy: `npx wrangler deploy`.
+  - Variables de build en el panel de Cloudflare: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `VAPID_PUBLIC_KEY`. `scripts/set-env.mjs` las escribe en `src/environments/environment.ts` **antes** del build (sustituirlas después rompería los hashes de `ngsw.json` y el service worker no se actualizaría). Si falta alguna, o el archivo ya no tiene los marcadores, el script falla y el build también.
+  - `public/_headers`: `no-cache` para `index.html`, `ngsw.json`, `ngsw-worker.js` y `manifest.webmanifest`, para que las versiones nuevas lleguen; caché larga e `immutable` para los archivos con hash.
+  - Dominio: el `*.workers.dev` que asigna Cloudflare. Un dominio propio queda documentado como paso opcional, sin configurar.
+  - Node 24 y pnpm 11 en la imagen de build: si no vienen por defecto, se fijan con las variables `NODE_VERSION` y `PNPM_VERSION`.
+  - Volver a una versión anterior se hace desde el panel de Cloudflare (versiones del Worker).
 - No hay previews por rama ni entorno de staging. El plan gratuito de Supabase solo da un proyecto útil, y una preview apuntando a producción dejaría operaciones de prueba en un historial que no se puede borrar. Las pruebas se hacen en local con Supabase CLI.
 - Las migraciones se aplican a producción a mano desde la máquina del desarrollador (`supabase db push`), no desde CI.
 - Supabase: el esquema, las políticas RLS, las funciones SQL y las Edge Functions viven en el repositorio como migraciones (Supabase CLI) y se aplican desde ahí, no editando a mano en el panel.
 - Desarrollo local con Supabase CLI (contenedores locales).
 - Variables públicas del frontend: URL de Supabase y clave `anon`. Los secretos (clave de servicio, claves VAPID privadas) solo viven en Supabase.
-- Hay que documentar en el README la configuración inicial: crear proyectos, variables, primer administrador, claves VAPID y URLs de redirección de Supabase Auth para los enlaces de acceso.
+- Hay que documentar (en `docs/deployment.md`, enlazado desde el README) la configuración inicial, incluida la de Cloudflare: crear proyectos, variables, primer administrador, claves VAPID y URLs de redirección de Supabase Auth para los enlaces de acceso.
 
 ## 10. Lo que queda a criterio de quien construya
 
