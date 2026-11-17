@@ -49,4 +49,6 @@ que pasa el número a rojo sin recargar y diálogo de reglas con alcance).
 
 ## Pendiente
 
-- **Plan 5 — Importación CSV/Excel y despliegue** en Cloudflare.
+- **Plan 5 — Importación de artículos** desde una plantilla Excel que descarga la propia
+  aplicación (solo artículos, sin stock).
+- **Plan 6 — Despliegue** en Cloudflare.
