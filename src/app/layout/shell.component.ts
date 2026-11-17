@@ -1,6 +1,13 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ActivatedRouteSnapshot,
@@ -11,12 +18,14 @@ import {
   RouterOutlet,
 } from '@angular/router';
 import { filter, map } from 'rxjs';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { AuthService } from '../core/auth.service';
 import { CurrentLocationService } from '../core/current-location.service';
+import { GlobalAlertsStore } from '../data/global-alerts.store';
 
 interface PageHeader {
   title: string;
@@ -33,6 +42,7 @@ interface PageHeader {
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
+    MatBadgeModule,
     MatButtonModule,
     MatIconModule,
     MatListModule,
@@ -42,6 +52,9 @@ interface PageHeader {
     :host {
       display: block;
       height: 100%;
+    }
+    .mat-badge.warning {
+      --mat-badge-background-color: var(--app-warning);
     }
     .layout-mobile {
       display: flex;
@@ -196,7 +209,17 @@ interface PageHeader {
             <mat-icon>home</mat-icon>Inicio
           </a>
           <a routerLink="/stock" routerLinkActive="active">
-            <mat-icon>inventory_2</mat-icon>Stock
+            <mat-icon
+              [matBadge]="globalAlerts.count()"
+              [matBadgeHidden]="globalAlerts.count() === 0"
+              matBadgeSize="small"
+              [class.critical]="globalAlerts.hasCritical()"
+              [class.warning]="!globalAlerts.hasCritical()"
+              >inventory_2</mat-icon
+            >Stock
+            @if (globalAlerts.count() > 0) {
+              <span class="cdk-visually-hidden">{{ stockBadgeDescription() }}</span>
+            }
           </a>
           <a routerLink="/historial" routerLinkActive="active">
             <mat-icon>history</mat-icon>Historial
@@ -226,8 +249,21 @@ interface PageHeader {
                 <span matListItemTitle>Inicio</span>
               </a>
               <a mat-list-item routerLink="/stock" routerLinkActive="active">
-                <mat-icon matListItemIcon>inventory_2</mat-icon>
-                <span matListItemTitle>Stock</span>
+                <mat-icon
+                  matListItemIcon
+                  [matBadge]="globalAlerts.count()"
+                  [matBadgeHidden]="globalAlerts.count() === 0"
+                  matBadgeSize="small"
+                  [class.critical]="globalAlerts.hasCritical()"
+                  [class.warning]="!globalAlerts.hasCritical()"
+                  >inventory_2</mat-icon
+                >
+                <span matListItemTitle
+                  >Stock
+                  @if (globalAlerts.count() > 0) {
+                    <span class="cdk-visually-hidden">{{ stockBadgeDescription() }}</span>
+                  }
+                </span>
               </a>
               <a mat-list-item routerLink="/historial" routerLinkActive="active">
                 <mat-icon matListItemIcon>history</mat-icon>
@@ -281,6 +317,11 @@ export class ShellComponent {
   protected readonly auth = inject(AuthService);
   protected readonly current = inject(CurrentLocationService);
   private readonly router = inject(Router);
+  protected readonly globalAlerts = inject(GlobalAlertsStore);
+  protected readonly stockBadgeDescription = computed(() => {
+    const n = this.globalAlerts.count();
+    return `${n} ${n === 1 ? 'artículo' : 'artículos'} con aviso global`;
+  });
 
   private readonly routeHeader = toSignal(
     this.router.events.pipe(
@@ -310,6 +351,7 @@ export class ShellComponent {
   protected readonly retrying = signal(false);
 
   constructor() {
+    void this.globalAlerts.refresh();
     // Si la sesión desaparece (cierre de sesión, token caducado, cierre en otra pestaña),
     // se vuelve al login.
     effect(() => {
