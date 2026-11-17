@@ -47,8 +47,17 @@ Verificado: 292 pruebas pgTAP (14 archivos), 298 pruebas Vitest (39 archivos), `
 correcto y recorrido manual a 1280 px y 375 px (usuario sin permisos de administrador, salida
 que pasa el número a rojo sin recargar y diálogo de reglas con alcance).
 
+### Plan 5 — Importación de artículos
+
+En Administración → Artículos se descarga una plantilla Excel (hoja «Artículos» con cabecera
+fija y desplegable de tipos activos, más instrucciones) y se importa: vista previa por fila
+(Nuevo, Ya existe, Error con su motivo), importación de todo o nada con `admin_import_items` y
+resumen final. Solo crea artículos; no carga stock. ExcelJS se carga bajo demanda.
+
+Verificado: 307 pruebas pgTAP (15 archivos), 336 pruebas Vitest (44 archivos), `pnpm build` sin
+avisos y recorrido manual a 1280 px y 375 px (plantilla descargada, archivo con un error de
+tipo, importación corregida, reimportación con todo «Ya existe»).
+
 ## Pendiente
 
-- **Plan 5 — Importación de artículos** desde una plantilla Excel que descarga la propia
-  aplicación (solo artículos, sin stock).
 - **Plan 6 — Despliegue** en Cloudflare.
