@@ -8,14 +8,14 @@ describe('AdminSectionsPage', () => {
     const f = TestBed.createComponent(AdminSectionsPage);
     f.detectChanges();
     const links = [...(f.nativeElement as HTMLElement).querySelectorAll('a')];
-    expect(links.map((a) => [a.querySelector('.name')?.textContent, a.getAttribute('href')])).toEqual(
-      [
-        ['Usuarios', '/admin/usuarios'],
-        ['Localizaciones', '/admin/localizaciones'],
-        ['Artículos', '/admin/articulos'],
-        ['Tipos', '/admin/tipos'],
-        ['Avisos', '/admin/avisos'],
-      ],
-    );
+    expect(
+      links.map((a) => [a.querySelector('.name')?.textContent, a.getAttribute('href')]),
+    ).toEqual([
+      ['Usuarios', '/admin/usuarios'],
+      ['Localizaciones', '/admin/localizaciones'],
+      ['Artículos', '/admin/articulos'],
+      ['Tipos', '/admin/tipos'],
+      ['Avisos', '/admin/avisos'],
+    ]);
   });
 });

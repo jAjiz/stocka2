@@ -1,4 +1,6 @@
+import { InjectionToken } from '@angular/core';
 import { ItemType } from '../../../data/models';
+import { saveBlob } from '../../../shared/download';
 
 export const ITEMS_SHEET = 'Artículos';
 export const INSTRUCTIONS_SHEET = 'Instrucciones';
@@ -67,3 +69,9 @@ export async function buildItemsTemplate(types: ItemType[]): Promise<Blob> {
   const buffer = await wb.xlsx.writeBuffer();
   return new Blob([buffer], { type: XLSX_MIME });
 }
+
+/** Genera y descarga la plantilla; se sustituye en las pruebas. */
+export const ITEMS_TEMPLATE_DOWNLOAD = new InjectionToken<(types: ItemType[]) => Promise<void>>(
+  'ITEMS_TEMPLATE_DOWNLOAD',
+  { factory: () => async (types) => saveBlob(await buildItemsTemplate(types), TEMPLATE_FILENAME) },
+);
