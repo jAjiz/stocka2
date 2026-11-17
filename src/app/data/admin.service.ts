@@ -100,6 +100,19 @@ export class AdminService {
     return this.call('admin_delete_item', { p_id: id });
   }
 
+  /** Crea en una sola transacción los artículos nuevos de una importación (spec §8.1). */
+  importItems(
+    items: { name: string; typeId: string; reference: string | null }[],
+  ): Promise<{ created: number; skipped: number }> {
+    return this.call('admin_import_items', {
+      p_items: items.map((i) => ({
+        name: i.name,
+        type_id: i.typeId,
+        reference: i.reference || null,
+      })),
+    });
+  }
+
   private async call<T>(fn: string, args: Record<string, unknown>): Promise<T> {
     const { data, error } = await this.supabase.rpc(fn, args);
     if (error) throw error;
