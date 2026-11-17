@@ -103,9 +103,21 @@ export interface StockAlert {
   threshold: number;
 }
 
+/** `location`: umbrales por localización. `global`: umbrales sobre el total de todas las localizaciones activas. */
+export type AlertScope = 'location' | 'global';
+
+/** Aviso sobre el total de un artículo en todas las localizaciones activas. */
+export interface GlobalAlert {
+  itemId: string;
+  total: number;
+  level: 'warning' | 'critical';
+  threshold: number;
+}
+
 export interface AlertRule {
   id: string;
   name: string;
+  scope: AlertScope;
   allItems: boolean;
   allLocations: boolean;
   itemIds: string[];
@@ -118,6 +130,7 @@ export interface AlertRule {
 /** `null` en itemIds / locationIds = todos (incluidos los que se den de alta después). */
 export interface AlertRuleInput {
   name: string;
+  scope: AlertScope;
   itemIds: string[] | null;
   locationIds: string[] | null;
   warning: number | null;

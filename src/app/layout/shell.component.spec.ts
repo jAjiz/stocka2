@@ -1,10 +1,12 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, Routes } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthService } from '../core/auth.service';
 import { CurrentLocationService } from '../core/current-location.service';
+import { GlobalAlertsStore } from '../data/global-alerts.store';
+import { GlobalAlert } from '../data/models';
 import { ShellComponent } from './shell.component';
 
 @Component({ template: '' })
@@ -27,7 +29,17 @@ const routes: Routes = [
   },
 ];
 
-function setup(opts: { loadError?: boolean; admin?: boolean; handset?: boolean } = {}) {
+function setup(
+  opts: { loadError?: boolean; admin?: boolean; handset?: boolean; alerts?: GlobalAlert[] } = {},
+) {
+  const list = signal(opts.alerts ?? []);
+  const store = {
+    alerts: list,
+    byItem: computed(() => new Map(list().map((a) => [a.itemId, a]))),
+    count: computed(() => list().length),
+    hasCritical: computed(() => list().some((a) => a.level === 'critical')),
+    refresh: vi.fn(async () => undefined),
+  };
   const session = signal<unknown>({ user: { id: 'u1' } });
   const loadError = signal(!!opts.loadError);
   const retry = vi.fn(async () => loadError.set(false));
@@ -43,6 +55,7 @@ function setup(opts: { loadError?: boolean; admin?: boolean; handset?: boolean }
     providers: [
       provideRouter(routes),
       { provide: AuthService, useValue: auth },
+      { provide: GlobalAlertsStore, useValue: store },
       {
         provide: BreakpointObserver,
         useValue: { observe: () => of({ matches: !!opts.handset, breakpoints: {} }) },
@@ -53,7 +66,7 @@ function setup(opts: { loadError?: boolean; admin?: boolean; handset?: boolean }
   const navigate = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
   const fixture = TestBed.createComponent(ShellComponent);
   fixture.detectChanges();
-  return { fixture, auth, navigate };
+  return { fixture, auth, navigate, store };
 }
 
 describe('ShellComponent', () => {
@@ -178,5 +191,54 @@ describe('ShellComponent', () => {
     text = (admin.fixture.nativeElement as HTMLElement).textContent;
     expect(text).toContain('Perfil');
     expect(text).toContain('Administración');
+  });
+
+  describe('número de avisos globales en el enlace Stock', () => {
+    const alerts: GlobalAlert[] = [
+      { itemId: 'i1', total: 1, level: 'critical', threshold: 3 },
+      { itemId: 'i2', total: 8, level: 'warning', threshold: 10 },
+      { itemId: 'i3', total: 9, level: 'warning', threshold: 10 },
+    ];
+    const badge = (el: HTMLElement) =>
+      el.querySelector('a[href="/stock"] .mat-badge-content') as HTMLElement | null;
+    const host = (el: HTMLElement) =>
+      el.querySelector('a[href="/stock"] .mat-badge') as HTMLElement | null;
+
+    for (const handset of [true, false]) {
+      it(`muestra el número en ${handset ? 'móvil' : 'ordenador'}`, () => {
+        const el = setup({ handset, alerts }).fixture.nativeElement as HTMLElement;
+        expect(badge(el)?.textContent?.trim()).toBe('3');
+        expect(host(el)?.classList).not.toContain('mat-badge-hidden');
+        // En Material 3 el tamaño small es un punto sin número
+        expect(host(el)?.classList).not.toContain('mat-badge-small');
+      });
+    }
+
+    it('es rojo si hay alguno grave', () => {
+      const el = setup({ alerts }).fixture.nativeElement as HTMLElement;
+      expect(host(el)?.classList).toContain('critical');
+    });
+
+    it('es naranja si todos son leves', () => {
+      const el = setup({ alerts: alerts.slice(1) }).fixture.nativeElement as HTMLElement;
+      expect(host(el)?.classList).toContain('warning');
+      expect(host(el)?.classList).not.toContain('critical');
+    });
+
+    it('sin avisos no hay número', () => {
+      const el = setup().fixture.nativeElement as HTMLElement;
+      expect(host(el)?.classList).toContain('mat-badge-hidden');
+    });
+
+    it('tiene una descripción accesible', () => {
+      const el = setup({ alerts }).fixture.nativeElement as HTMLElement;
+      const hidden = el.querySelector('a[href="/stock"] .cdk-visually-hidden');
+      expect(hidden?.textContent?.trim()).toBe('3 artículos con aviso global');
+    });
+
+    it('el shell refresca los avisos al arrancar', () => {
+      const { store } = setup();
+      expect(store.refresh).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -169,6 +169,27 @@ Esta última decisión puede generar muchos avisos si el catálogo es grande. Es
 - El envío no puede retrasar ni hacer fallar la operación. Si el push falla, la operación queda guardada igualmente.
 - Crear o editar una regla no envía notificaciones de forma retroactiva; solo lo hacen las operaciones. La aplicación sí muestra enseguida los avisos que resulten de la regla nueva.
 
+### Avisos globales (total de todas las localizaciones)
+
+**Para qué:** saber cuándo hay que pedir material al proveedor. Lo que importa es cuánto queda en total, aunque esté repartido entre el almacén y las furgonetas.
+
+**Reglas globales:**
+- Al crear o editar una regla, el administrador elige su **alcance**: *por localización* (las reglas descritas arriba) o *global*.
+- Una regla global define artículos (uno, varios o *todos*), nivel leve, nivel grave y nombre, con las mismas condiciones que una regla por localización. No tiene localizaciones.
+- La regla compara los umbrales con el **total** del artículo: la suma de su stock en todas las localizaciones activas. Un artículo sin stock en ninguna tiene total 0.
+- Los umbrales, las reglas solapadas entre reglas globales (gana el umbral más alto en cada nivel), duplicar, deshabilitar y eliminar funcionan igual que en las reglas por localización.
+- Las reglas globales y las reglas por localización son independientes: una no tapa ni modifica a la otra.
+- Solo cuentan los artículos activos.
+- La lista de reglas de la administración indica el alcance de cada regla.
+- Si al editar una regla se cambia su alcance de por localización a global, se descartan las localizaciones que tenía guardadas (decisión de diseño, no del usuario).
+
+**Dónde se ven** (todos los usuarios activos, no solo los administradores):
+- En la pantalla de **Stock global** (sección 8, punto 4): el total del artículo se colorea en rojo si tiene aviso global grave y en naranja si es leve. El color va acompañado de un texto accesible con el nivel y el umbral (por ejemplo, un `title` o un `aria-label`).
+- Un botón **«Solo con aviso (N)»** junto a los filtros deja en la tabla solo los artículos con aviso global. Se combina con la búsqueda y el filtro por tipo. N es el total de artículos con aviso global, el mismo número del icono, sin descontar los que oculten la búsqueda o el filtro (decisión de diseño). Si no hay ningún aviso global, el botón no aparece.
+- El enlace de **Stock** en la navegación (barra inferior en móvil, menú lateral en ordenador) muestra un número con los artículos que tienen aviso global: rojo si alguno es grave y naranja si todos son leves. Si no hay ninguno, no se muestra.
+- El número se calcula al abrir la aplicación, al entrar en Stock y después de cada operación del propio usuario. No hace falta que se actualice en tiempo real con las operaciones de los demás.
+- Los avisos globales **no** aparecen en Inicio ni en la página de una localización, y **no envían notificaciones push**, ni siquiera los graves.
+
 ### Suscripciones push
 - Cada usuario activa las notificaciones desde su perfil, una vez por dispositivo, y puede tener varios dispositivos.
 - Puede desactivarlas por dispositivo. Las suscripciones caducadas o rechazadas por el servicio de push se eliminan automáticamente.
@@ -197,7 +218,7 @@ La interfaz se adapta al tamaño de pantalla, no al tipo de dispositivo (con `Br
    - En "Mover aquí" primero se elige el origen y después artículos con stock en ese origen.
    - En "Añadir" se puede crear un artículo nuevo sin salir del formulario.
    - Las localizaciones sin permiso no se pueden abrir para operar.
-4. **Stock global (solo lectura):** cada artículo con su cantidad en cada localización activa.
+4. **Stock global (solo lectura):** cada artículo con una columna **Total** (la suma de todas las localizaciones activas) y su cantidad en cada localización activa. En ordenador la columna Total va después de Tipo, y en móvil, después del nombre del artículo, siempre antes de las localizaciones. Muestra los avisos globales (sección 6, «Avisos globales»).
 5. **Historial** (sección 7).
 6. **Administración** (solo administradores): usuarios e invitaciones, localizaciones, artículos, tipos de artículo, reglas de aviso e **importación inicial** (sección 8.1).
 7. **Perfil:** nombre visible, cambio de contraseña y activación de notificaciones en el dispositivo.

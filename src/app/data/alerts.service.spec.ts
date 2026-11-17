@@ -23,6 +23,7 @@ describe('AlertsService', () => {
       locationIds: null,
       warning: 5,
       critical: null,
+      scope: 'location',
     });
     expect(id).toBe('r1');
     expect(fake.rpc).toHaveBeenCalledWith('admin_save_alert_rule', {
@@ -32,7 +33,54 @@ describe('AlertsService', () => {
       p_location_ids: null,
       p_warning: 5,
       p_critical: null,
+      p_scope: 'location',
     });
+  });
+
+  it('saveRule global envía p_scope global', async () => {
+    const { service, fake } = setup();
+    await service.saveRule('r2', {
+      name: 'Pedir',
+      itemIds: ['i1'],
+      locationIds: null,
+      warning: 10,
+      critical: 3,
+      scope: 'global',
+    });
+    expect(fake.rpc).toHaveBeenCalledWith(
+      'admin_save_alert_rule',
+      expect.objectContaining({ p_id: 'r2', p_scope: 'global', p_location_ids: null }),
+    );
+  });
+
+  it('rules mapea el alcance de la regla', async () => {
+    const { service } = setup([
+      {
+        id: 'r1',
+        name: 'Pedir',
+        scope: 'global',
+        all_items: true,
+        all_locations: true,
+        warning_threshold: 10,
+        critical_threshold: null,
+        active: true,
+        alert_rule_items: [],
+        alert_rule_locations: [],
+      },
+    ]);
+    expect((await service.rules())[0].scope).toBe('global');
+  });
+
+  it('global convierte las filas de global_alerts', async () => {
+    const { service, fake } = setup();
+    fake.rpc.mockResolvedValueOnce({
+      data: [{ item_id: 'i1', total: 4, level: 'critical', threshold: 5 }],
+      error: null,
+    });
+    expect(await service.global()).toEqual([
+      { itemId: 'i1', total: 4, level: 'critical', threshold: 5 },
+    ]);
+    expect(fake.rpc).toHaveBeenCalledWith('global_alerts');
   });
 
   it('rules convierte las filas embebidas en listas de ids', async () => {
@@ -40,6 +88,7 @@ describe('AlertsService', () => {
       {
         id: 'r1',
         name: 'Bridas',
+        scope: 'location',
         all_items: false,
         all_locations: true,
         warning_threshold: 5,
@@ -56,6 +105,7 @@ describe('AlertsService', () => {
       {
         id: 'r1',
         name: 'Bridas',
+        scope: 'location',
         allItems: false,
         allLocations: true,
         itemIds: ['i1', 'i2'],

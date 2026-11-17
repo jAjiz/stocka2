@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { SUPABASE } from '../core/supabase';
 import { madridDayStartUtc, nextDay } from '../shared/dates';
+import { GlobalAlertsStore } from './global-alerts.store';
 import { OperationInput, OperationKind, OperationLine, OperationSummary } from './models';
 
 export interface HistoryFilters {
@@ -31,6 +32,7 @@ interface SearchRow {
 @Injectable({ providedIn: 'root' })
 export class OperationsService {
   private readonly supabase = inject(SUPABASE);
+  private readonly globalAlerts = inject(GlobalAlertsStore);
 
   async perform(input: OperationInput): Promise<string> {
     const { data, error } = await this.supabase.rpc('perform_operation', {
@@ -43,6 +45,7 @@ export class OperationsService {
       p_operation_id: input.operationId ?? null,
     });
     if (error) throw error;
+    void this.globalAlerts.refresh();
     return data as string;
   }
 

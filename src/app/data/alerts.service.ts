@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { SUPABASE } from '../core/supabase';
-import { AlertRule, AlertRuleInput, StockAlert } from './models';
+import { AlertRule, AlertRuleInput, AlertScope, GlobalAlert, StockAlert } from './models';
 
 interface AlertDbRow {
   item_id: string;
@@ -10,9 +10,17 @@ interface AlertDbRow {
   threshold: number;
 }
 
+interface GlobalAlertDbRow {
+  item_id: string;
+  total: number;
+  level: GlobalAlert['level'];
+  threshold: number;
+}
+
 interface RuleDbRow {
   id: string;
   name: string;
+  scope: AlertScope;
   all_items: boolean;
   all_locations: boolean;
   warning_threshold: number | null;
@@ -39,17 +47,29 @@ export class AlertsService {
     }));
   }
 
+  async global(): Promise<GlobalAlert[]> {
+    const { data, error } = await this.supabase.rpc('global_alerts');
+    if (error) throw error;
+    return ((data ?? []) as GlobalAlertDbRow[]).map((r) => ({
+      itemId: r.item_id,
+      total: r.total,
+      level: r.level,
+      threshold: r.threshold,
+    }));
+  }
+
   async rules(): Promise<AlertRule[]> {
     const { data, error } = await this.supabase
       .from('alert_rules')
       .select(
-        'id, name, all_items, all_locations, warning_threshold, critical_threshold, active, alert_rule_items(item_id), alert_rule_locations(location_id)',
+        'id, name, scope, all_items, all_locations, warning_threshold, critical_threshold, active, alert_rule_items(item_id), alert_rule_locations(location_id)',
       )
       .order('name');
     if (error) throw error;
     return ((data ?? []) as unknown as RuleDbRow[]).map((r) => ({
       id: r.id,
       name: r.name,
+      scope: r.scope,
       allItems: r.all_items,
       allLocations: r.all_locations,
       itemIds: (r.alert_rule_items ?? []).map((i) => i.item_id),
@@ -68,6 +88,7 @@ export class AlertsService {
       p_location_ids: input.locationIds,
       p_warning: input.warning,
       p_critical: input.critical,
+      p_scope: input.scope,
     });
   }
 

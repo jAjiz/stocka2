@@ -2,6 +2,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { AlertsService } from '../../data/alerts.service';
+import { GlobalAlertsStore } from '../../data/global-alerts.store';
 import { CatalogService } from '../../data/catalog.service';
 import { AlertRulesPage } from './alert-rules.page';
 
@@ -11,6 +12,7 @@ async function setup() {
       {
         id: 'r1',
         name: 'Stock general',
+        scope: 'location',
         allItems: true,
         allLocations: true,
         itemIds: [],
@@ -22,6 +24,7 @@ async function setup() {
       {
         id: 'r2',
         name: 'Furgonetas',
+        scope: 'location',
         allItems: false,
         allLocations: false,
         itemIds: ['i1', 'i2'],
@@ -31,8 +34,21 @@ async function setup() {
         active: true,
       },
       {
+        id: 'r4',
+        name: 'Pedir al proveedor',
+        scope: 'global',
+        allItems: true,
+        allLocations: true,
+        itemIds: [],
+        locationIds: [],
+        warning: 10,
+        critical: 3,
+        active: true,
+      },
+      {
         id: 'r3',
         name: 'Viejas',
+        scope: 'location',
         allItems: true,
         allLocations: false,
         itemIds: [],
@@ -43,7 +59,9 @@ async function setup() {
       },
     ]),
     deleteRule: vi.fn().mockRejectedValue({ message: 'forbidden' }),
+    setRuleActive: vi.fn().mockResolvedValue(undefined),
   };
+  const globalAlerts = { refresh: vi.fn(async () => undefined) };
   const catalog = {
     items: vi.fn().mockResolvedValue([]),
     allLocations: vi.fn().mockResolvedValue([
@@ -56,6 +74,7 @@ async function setup() {
     providers: [
       { provide: AlertsService, useValue: alerts },
       { provide: CatalogService, useValue: catalog },
+      { provide: GlobalAlertsStore, useValue: globalAlerts },
       { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => of(true) }) } },
     ],
   });
@@ -63,7 +82,7 @@ async function setup() {
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
-  return { fixture, alerts, el: fixture.nativeElement as HTMLElement };
+  return { fixture, alerts, globalAlerts, el: fixture.nativeElement as HTMLElement };
 }
 
 const row = (el: HTMLElement, name: string) =>
@@ -109,5 +128,24 @@ describe('AlertRulesPage', () => {
     fixture.detectChanges();
     expect(alerts.deleteRule).toHaveBeenCalledWith('r2');
     expect(el.textContent).toContain('Solo un administrador activo puede hacer esto.');
+  });
+
+  it('una regla global muestra su alcance en lugar de las localizaciones', async () => {
+    const { el } = await setup();
+    const text = row(el, 'Pedir al proveedor')!.textContent!;
+    expect(text).toContain('Alcance: total de todas las localizaciones');
+    expect(text).not.toContain('Localizaciones:');
+  });
+
+  it('tras cambiar una regla refresca los avisos globales de la navegación', async () => {
+    const { el, alerts, globalAlerts, fixture } = await setup();
+    globalAlerts.refresh.mockClear();
+    const button = [...row(el, 'Pedir al proveedor')!.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Deshabilitar'),
+    ) as HTMLButtonElement;
+    button.click();
+    await fixture.whenStable();
+    expect(alerts.setRuleActive).toHaveBeenCalledWith('r4', false);
+    expect(globalAlerts.refresh).toHaveBeenCalledTimes(1);
   });
 });

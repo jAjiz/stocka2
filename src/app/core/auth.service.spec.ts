@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { AuthApiError, AuthRetryableFetchError } from '@supabase/supabase-js';
+import { GlobalAlertsStore } from '../data/global-alerts.store';
 import { PushService } from '../data/push.service';
 import { AuthService } from './auth.service';
 import { SUPABASE } from './supabase';
@@ -69,13 +70,15 @@ function setup(opts: FakeOpts = {}) {
     forgetDevice: vi.fn().mockResolvedValue(undefined),
     syncDevice: vi.fn().mockResolvedValue(undefined),
   };
+  const globalAlerts = { clear: vi.fn() };
   TestBed.configureTestingModule({
     providers: [
       { provide: SUPABASE, useValue: fake },
       { provide: PushService, useValue: push },
+      { provide: GlobalAlertsStore, useValue: globalAlerts },
     ],
   });
-  return { auth: TestBed.inject(AuthService), signOut, opts, fake, push };
+  return { auth: TestBed.inject(AuthService), signOut, opts, fake, push, globalAlerts };
 }
 
 const INACTIVE = 'Tu usuario está desactivado. Habla con el administrador.';
@@ -219,6 +222,12 @@ describe('AuthService', () => {
     expect(auth.session()).toBeNull();
     expect(auth.profile()).toBeNull();
     expect(auth.permittedLocationIds().size).toBe(0);
+  });
+
+  it('signOut vacía los avisos globales del usuario anterior', async () => {
+    const { auth, globalAlerts } = setup();
+    await auth.signOut();
+    expect(globalAlerts.clear).toHaveBeenCalled();
   });
 
   it('signOut olvida el dispositivo antes de cerrar la sesión', async () => {

@@ -7,6 +7,7 @@ import { AlertRuleDialogComponent } from './alert-rule-dialog.component';
 const rule: AlertRule = {
   id: 'r1',
   name: 'Tornillos',
+  scope: 'location',
   allItems: true,
   allLocations: true,
   itemIds: [],
@@ -45,8 +46,18 @@ async function setup(data: { rule: AlertRule | null; copy: boolean }) {
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
   };
-  const save = () => [...el.querySelectorAll('button')].find((b) => b.textContent?.includes('Guardar'))!;
-  return { fixture, alerts, ref, el, type, save };
+  const save = () =>
+    [...el.querySelectorAll('button')].find((b) => b.textContent?.includes('Guardar'))!;
+  const radio = (label: string) =>
+    [...el.querySelectorAll('mat-radio-button')].find((r) => r.textContent?.includes(label))!;
+  const choose = (label: string) => {
+    (radio(label).querySelector('input') as HTMLInputElement).click();
+    fixture.detectChanges();
+  };
+  const checked = (label: string) =>
+    (radio(label).querySelector('input') as HTMLInputElement).checked;
+  const hasLocations = () => el.textContent?.includes('Todas las localizaciones') ?? false;
+  return { fixture, alerts, ref, el, type, save, choose, checked, hasLocations };
 }
 
 describe('AlertRuleDialogComponent', () => {
@@ -80,6 +91,7 @@ describe('AlertRuleDialogComponent', () => {
     await fixture.whenStable();
     expect(alerts.saveRule).toHaveBeenCalledWith(null, {
       name: 'Tornillos',
+      scope: 'location',
       itemIds: null,
       locationIds: null,
       warning: null,
@@ -117,10 +129,105 @@ describe('AlertRuleDialogComponent', () => {
     await fixture.whenStable();
     expect(alerts.saveRule).toHaveBeenCalledWith('r1', {
       name: 'Otro nombre',
+      scope: 'location',
       itemIds: ['i1', 'iOld'],
       locationIds: ['lOld'],
       warning: null,
       critical: 1,
+    });
+  });
+
+  describe('alcance', () => {
+    const GLOBAL = 'Global (total de todas las localizaciones)';
+
+    it('una regla nueva es por localización por defecto', async () => {
+      const { checked, hasLocations } = await setup({ rule: null, copy: false });
+      expect(checked('Por localización')).toBe(true);
+      expect(checked(GLOBAL)).toBe(false);
+      expect(hasLocations()).toBe(true);
+    });
+
+    it('al elegir Global se ocultan las localizaciones y se guarda con scope global', async () => {
+      const { alerts, fixture, type, save, choose, hasLocations } = await setup({
+        rule: null,
+        copy: false,
+      });
+      type('Nombre', 'Pedir');
+      type('Aviso leve', '10');
+      choose(GLOBAL);
+      expect(hasLocations()).toBe(false);
+      save().click();
+      await fixture.whenStable();
+      expect(alerts.saveRule).toHaveBeenCalledWith(null, {
+        name: 'Pedir',
+        scope: 'global',
+        itemIds: null,
+        locationIds: null,
+        warning: 10,
+        critical: null,
+      });
+    });
+
+    it('al elegir Global ignora las localizaciones, incluidas las deshabilitadas', async () => {
+      const { alerts, fixture, save, choose } = await setup({
+        rule: { ...rule, allLocations: false, locationIds: ['lOld'] },
+        copy: false,
+      });
+      choose(GLOBAL);
+      expect(save().disabled).toBe(false);
+      save().click();
+      await fixture.whenStable();
+      expect(alerts.saveRule).toHaveBeenCalledWith(
+        'r1',
+        expect.objectContaining({ scope: 'global', locationIds: null }),
+      );
+    });
+
+    it('editar una regla global la abre con Global marcado', async () => {
+      const { checked, hasLocations } = await setup({
+        rule: { ...rule, scope: 'global' },
+        copy: false,
+      });
+      expect(checked(GLOBAL)).toBe(true);
+      expect(hasLocations()).toBe(false);
+    });
+
+    it('duplicar conserva el alcance', async () => {
+      const { alerts, fixture, save } = await setup({
+        rule: { ...rule, scope: 'global' },
+        copy: true,
+      });
+      save().click();
+      await fixture.whenStable();
+      expect(alerts.saveRule).toHaveBeenCalledWith(
+        null,
+        expect.objectContaining({ scope: 'global', locationIds: null }),
+      );
+    });
+
+    it('pasar de global a por localización exige elegir localizaciones', async () => {
+      const { alerts, el, fixture, save, choose } = await setup({
+        rule: { ...rule, scope: 'global' },
+        copy: false,
+      });
+      choose('Por localización');
+      const box = (label: string) =>
+        [...el.querySelectorAll('mat-checkbox')]
+          .find((c) => c.textContent?.trim() === label)!
+          .querySelector('input') as HTMLInputElement;
+      // Una regla global guarda all_locations = true, pero al pasarla a por localización no
+      // se propone «Todas»: hay que elegir a propósito.
+      expect(box('Todas las localizaciones').checked).toBe(false);
+      expect(save().disabled).toBe(true);
+      box('Taller').click();
+      fixture.detectChanges();
+      expect(save().disabled).toBe(false);
+      save().click();
+      await fixture.whenStable();
+      expect(alerts.saveRule).toHaveBeenCalledWith(
+        'r1',
+        expect.objectContaining({ scope: 'location', locationIds: ['l1'] }),
+      );
     });
   });
 });

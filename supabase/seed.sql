@@ -89,5 +89,9 @@ insert into public.alert_rule_locations (rule_id, location_id) values
   ('00000000-0000-4000-8000-000000000401', '00000000-0000-4000-8000-000000000102'),
   ('00000000-0000-4000-8000-000000000401', '00000000-0000-4000-8000-000000000103');
 
+-- Regla de aviso global: total de cada artículo en todas las localizaciones (leve 10, grave 3)
+insert into public.alert_rules (id, name, scope, all_items, all_locations, warning_threshold, critical_threshold)
+values ('00000000-0000-4000-8000-000000000402', 'Pedir al proveedor', 'global', true, true, 10, 3);
+
 -- URL de la Edge Function send-push que llama perform_operation con pg_net (solo desarrollo)
 select vault.create_secret('http://host.docker.internal:54321/functions/v1/send-push', 'stocka2_push_url');
