@@ -9,12 +9,14 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
+import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { dbErrorMessage } from '../../core/db-errors';
 import { CatalogService } from '../../data/catalog.service';
+import { GlobalAlertsStore } from '../../data/global-alerts.store';
 import { Item, ItemType, Location, StockRow } from '../../data/models';
 import { StockService } from '../../data/stock.service';
 import { normalizeText } from '../../shared/format';
@@ -26,12 +28,13 @@ interface ItemRow {
   typeId: string;
   typeName: string;
   quantities: Map<string, number>;
+  total: number;
 }
 
 @Component({
   selector: 'app-stock-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormFieldModule, MatInputModule, MatSelectModule, MatTableModule],
+  imports: [MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatTableModule],
   styles: `
     .filters {
       display: flex;
@@ -41,6 +44,24 @@ interface ItemRow {
     }
     .filters mat-form-field {
       flex: 1 1 220px;
+    }
+    .filters .only-alerts {
+      align-self: center;
+    }
+    .only-alerts[aria-pressed='true'] {
+      background: var(--app-error-container);
+      color: var(--app-on-error-container);
+    }
+    td.total {
+      font-weight: 600;
+    }
+    td.total.warning {
+      background: var(--app-warning-container);
+      color: var(--app-warning);
+    }
+    td.total.critical {
+      background: var(--app-error-container);
+      color: var(--app-on-error-container);
     }
     @media (min-width: 600px) {
       .filters mat-form-field {
@@ -81,6 +102,17 @@ interface ItemRow {
           }
         </mat-select>
       </mat-form-field>
+      @if (globalAlerts.count() > 0) {
+        <button
+          mat-stroked-button
+          type="button"
+          class="only-alerts"
+          [attr.aria-pressed]="onlyAlerts()"
+          (click)="onlyAlerts.set(!onlyAlerts())"
+        >
+          Solo con aviso ({{ globalAlerts.count() }})
+        </button>
+      }
     </div>
 
     @if (!loaded()) {
@@ -106,6 +138,19 @@ interface ItemRow {
           <th mat-header-cell *matHeaderCellDef>Tipo</th>
           <td mat-cell *matCellDef="let r">{{ r.typeName }}</td>
         </ng-container>
+        <ng-container matColumnDef="total">
+          <th mat-header-cell *matHeaderCellDef class="num">Total</th>
+          <td
+            mat-cell
+            *matCellDef="let r"
+            class="num total"
+            [class.warning]="globalAlerts.byItem().get(r.id)?.level === 'warning'"
+            [class.critical]="globalAlerts.byItem().get(r.id)?.level === 'critical'"
+            [attr.title]="alertTitle(r.id)"
+          >
+            {{ r.total }}
+          </td>
+        </ng-container>
         @for (l of locations(); track l.id) {
           <ng-container [matColumnDef]="'loc-' + l.id">
             <th mat-header-cell *matHeaderCellDef class="num">{{ l.name }}</th>
@@ -121,6 +166,7 @@ interface ItemRow {
 export class StockOverviewPage {
   private readonly catalog = inject(CatalogService);
   private readonly stockService = inject(StockService);
+  protected readonly globalAlerts = inject(GlobalAlertsStore);
 
   protected readonly isHandset = toSignal(
     inject(BreakpointObserver)
@@ -135,6 +181,7 @@ export class StockOverviewPage {
   protected readonly error = signal('');
   protected readonly search = signal('');
   protected readonly typeFilter = signal('');
+  protected readonly onlyAlerts = signal(false);
 
   private readonly items = signal<Item[]>([]);
   private readonly stock = signal<StockRow[]>([]);
@@ -146,6 +193,7 @@ export class StockOverviewPage {
   protected readonly columns = computed(() => [
     'name',
     ...(this.isHandset() ? [] : ['reference', 'typeName']),
+    'total',
     ...this.locations().map((l) => 'loc-' + l.id),
   ]);
 
@@ -157,22 +205,30 @@ export class StockOverviewPage {
       if (!m) byItem.set(s.itemId, (m = new Map()));
       m.set(s.locationId, s.quantity);
     }
-    return this.items().map((i) => ({
-      id: i.id,
-      name: i.name,
-      reference: i.reference,
-      typeId: i.typeId,
-      typeName: types.get(i.typeId) ?? '',
-      quantities: byItem.get(i.id) ?? new Map<string, number>(),
-    }));
+    return this.items().map((i) => {
+      const quantities = byItem.get(i.id) ?? new Map<string, number>();
+      let total = 0;
+      for (const q of quantities.values()) total += q;
+      return {
+        id: i.id,
+        name: i.name,
+        reference: i.reference,
+        typeId: i.typeId,
+        typeName: types.get(i.typeId) ?? '',
+        quantities,
+        total,
+      };
+    });
   });
 
   protected readonly filtered = computed<ItemRow[]>(() => {
     const q = normalizeText(this.search());
     const type = this.typeFilter();
+    const alerts = this.onlyAlerts() ? this.globalAlerts.byItem() : null;
     return this.rows().filter(
       (r) =>
         (!type || r.typeId === type) &&
+        (!alerts || alerts.has(r.id)) &&
         (!q || normalizeText(r.name).includes(q) || normalizeText(r.reference ?? '').includes(q)),
     );
   });
@@ -181,7 +237,15 @@ export class StockOverviewPage {
     void inject(PendingTasks).run(() => this.load());
   }
 
+  protected alertTitle(itemId: string): string | null {
+    const a = this.globalAlerts.byItem().get(itemId);
+    if (!a) return null;
+    return `Aviso ${a.level === 'critical' ? 'grave' : 'leve'}: umbral ${a.threshold}`;
+  }
+
   private async load(): Promise<void> {
+    // Los avisos son accesorios: se cargan aparte y no bloquean la tabla.
+    void this.globalAlerts.refresh();
     try {
       const [locations, types, items, stock] = await Promise.all([
         this.catalog.locations(),
