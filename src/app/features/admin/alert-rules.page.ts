@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AlertsService } from '../../data/alerts.service';
+import { GlobalAlertsStore } from '../../data/global-alerts.store';
 import { CatalogService } from '../../data/catalog.service';
 import { AlertRule, Item, Location } from '../../data/models';
 import { dialogSize } from '../../shared/dialog-size';
@@ -30,6 +31,7 @@ import { CatalogListComponent, CatalogRow, CatalogRowTag } from './catalog-list.
 export class AlertRulesPage extends CatalogAdmin {
   private readonly alerts = inject(AlertsService);
   private readonly catalog = inject(CatalogService);
+  private readonly globalAlerts = inject(GlobalAlertsStore);
 
   private readonly rules = signal<AlertRule[]>([]);
   private readonly items = signal<Item[]>([]);
@@ -52,6 +54,8 @@ export class AlertRulesPage extends CatalogAdmin {
   }
 
   protected async load(): Promise<void> {
+    // Una regla nueva, editada o deshabilitada cambia el número de la navegación enseguida.
+    void this.globalAlerts.refresh();
     const [rules, items, locations] = await Promise.all([
       this.alerts.rules(),
       this.catalog.items(),

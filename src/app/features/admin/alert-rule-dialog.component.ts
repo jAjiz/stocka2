@@ -204,7 +204,11 @@ export class AlertRuleDialogComponent {
   );
   protected readonly scope = signal<AlertScope>(this.data.rule?.scope ?? 'location');
   protected readonly allItems = signal(this.data.rule?.allItems ?? true);
-  protected readonly allLocations = signal(this.data.rule?.allLocations ?? true);
+  // Una regla global guarda all_locations = true; si se pasa a por localización no se propone
+  // «Todas»: el administrador elige a propósito.
+  protected readonly allLocations = signal(
+    this.data.rule?.scope === 'global' ? false : (this.data.rule?.allLocations ?? true),
+  );
   // Los ids que no están entre los elegibles (artículos o localizaciones deshabilitados)
   // no se muestran, pero se conservan al guardar para que sigan cubiertos si se rehabilitan.
   protected readonly hiddenItemIds = (this.data.rule?.itemIds ?? []).filter(

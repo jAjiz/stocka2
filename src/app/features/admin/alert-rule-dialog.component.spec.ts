@@ -215,8 +215,9 @@ describe('AlertRuleDialogComponent', () => {
         [...el.querySelectorAll('mat-checkbox')]
           .find((c) => c.textContent?.trim() === label)!
           .querySelector('input') as HTMLInputElement;
-      box('Todas las localizaciones').click();
-      fixture.detectChanges();
+      // Una regla global guarda all_locations = true, pero al pasarla a por localización no
+      // se propone «Todas»: hay que elegir a propósito.
+      expect(box('Todas las localizaciones').checked).toBe(false);
       expect(save().disabled).toBe(true);
       box('Taller').click();
       fixture.detectChanges();
