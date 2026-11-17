@@ -214,7 +214,9 @@ export class ImportItemsDialogComponent {
       const items = this.rows()
         .filter((r) => r.status === 'new')
         .map((r) => ({ name: r.name, typeId: r.typeId!, reference: r.reference }));
-      this.result.set(await this.admin.importItems(items));
+      const { created, skipped } = await this.admin.importItems(items);
+      // «Ya existían»: las marcadas en la vista previa más las que otro creó entretanto
+      this.result.set({ created, skipped: skipped + this.counts().exists });
     } catch (e) {
       const code = (e as { message?: unknown } | null)?.message;
       this.error.set(code === 'inactive_type' ? INACTIVE_TYPE : adminErrorMessage(e));

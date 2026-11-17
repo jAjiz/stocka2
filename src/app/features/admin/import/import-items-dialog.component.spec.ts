@@ -22,7 +22,7 @@ const row = (r: number, name: string, type = 'Fontanería', reference = ''): Imp
 });
 
 async function setup(read: () => Promise<ImportRow[]>) {
-  const admin = { importItems: vi.fn().mockResolvedValue({ created: 2, skipped: 1 }) };
+  const admin = { importItems: vi.fn().mockResolvedValue({ created: 2, skipped: 0 }) };
   const ref = { close: vi.fn() };
   const data: ImportItemsDialogData = { types: TYPES, items: ITEMS };
   TestBed.configureTestingModule({
@@ -99,6 +99,7 @@ describe('ImportItemsDialogComponent', () => {
       { name: 'Tubo', typeId: 't1', reference: 'T-1' },
       { name: 'Grifo', typeId: 't1', reference: '' },
     ]);
+    // «Ya existían» suma las filas marcadas en la vista previa y las que el servidor saltó
     expect(el.textContent).toContain('Creados 2 · Ya existían 1');
     expect(el.querySelector('table')).toBeNull();
     button('Cerrar')!.click();
@@ -126,5 +127,19 @@ describe('ImportItemsDialogComponent', () => {
       'Uno de los tipos se ha deshabilitado o eliminado. Vuelve a cargar el archivo.',
     );
     expect(button('Elegir archivo')).toBeDefined();
+  });
+
+  it('el resumen suma las que ya existían en la vista previa y las creadas entretanto', async () => {
+    const { el, fixture, admin, choose, button } = await setup(async () => [
+      row(2, 'Tubo'),
+      row(3, 'Codo'),
+      row(4, 'Grifo'),
+    ]);
+    admin.importItems.mockResolvedValueOnce({ created: 1, skipped: 1 });
+    await choose();
+    button('Importar')!.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el.textContent).toContain('Creados 1 · Ya existían 2');
   });
 });
