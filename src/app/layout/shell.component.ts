@@ -212,7 +212,6 @@ interface PageHeader {
             <mat-icon
               [matBadge]="globalAlerts.count()"
               [matBadgeHidden]="globalAlerts.count() === 0"
-              matBadgeSize="small"
               [class.critical]="globalAlerts.hasCritical()"
               [class.warning]="!globalAlerts.hasCritical()"
               >inventory_2</mat-icon
@@ -253,7 +252,6 @@ interface PageHeader {
                   matListItemIcon
                   [matBadge]="globalAlerts.count()"
                   [matBadgeHidden]="globalAlerts.count() === 0"
-                  matBadgeSize="small"
                   [class.critical]="globalAlerts.hasCritical()"
                   [class.warning]="!globalAlerts.hasCritical()"
                   >inventory_2</mat-icon

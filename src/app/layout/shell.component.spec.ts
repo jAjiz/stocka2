@@ -209,6 +209,8 @@ describe('ShellComponent', () => {
         const el = setup({ handset, alerts }).fixture.nativeElement as HTMLElement;
         expect(badge(el)?.textContent?.trim()).toBe('3');
         expect(host(el)?.classList).not.toContain('mat-badge-hidden');
+        // En Material 3 el tamaño small es un punto sin número
+        expect(host(el)?.classList).not.toContain('mat-badge-small');
       });
     }
 
