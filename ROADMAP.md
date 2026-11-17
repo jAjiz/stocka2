@@ -38,4 +38,7 @@ recorrido manual con notificaciones push reales y la instalación de la PWA sigu
 
 ## Pendiente
 
-- **Plan 4 — Importación CSV/Excel y despliegue** en Cloudflare.
+- **Plan 4 — Totales y avisos globales:** columna Total en el stock global y reglas de aviso
+  sobre el total de todas las localizaciones, visibles en la pantalla de stock y en su icono,
+  sin push.
+- **Plan 5 — Importación CSV/Excel y despliegue** en Cloudflare.
