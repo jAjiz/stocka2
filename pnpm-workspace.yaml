@@ -3,3 +3,4 @@ allowBuilds:
   esbuild: false
   lmdb: false
   msgpackr-extract: false
+  workerd: false
