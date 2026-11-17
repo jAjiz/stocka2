@@ -224,7 +224,9 @@ export class StockOverviewPage {
   protected readonly filtered = computed<ItemRow[]>(() => {
     const q = normalizeText(this.search());
     const type = this.typeFilter();
-    const alerts = this.onlyAlerts() ? this.globalAlerts.byItem() : null;
+    // Sin avisos el botón desaparece; el filtro deja de aplicarse para no dejar la tabla vacía.
+    const alerts =
+      this.onlyAlerts() && this.globalAlerts.count() > 0 ? this.globalAlerts.byItem() : null;
     return this.rows().filter(
       (r) =>
         (!type || r.typeId === type) &&

@@ -42,4 +42,21 @@ describe('GlobalAlertsStore', () => {
     expect(store.alerts()).toEqual([]);
     expect(store.count()).toBe(0);
   });
+
+  it('clear vacía la lista', async () => {
+    const store = setup(async () => [{ itemId: 'i1', total: 2, level: 'critical', threshold: 3 }]);
+    await store.refresh();
+    store.clear();
+    expect(store.count()).toBe(0);
+  });
+
+  it('un refresh lanzado antes de clear no repone los avisos al terminar', async () => {
+    let resolve!: (v: GlobalAlert[]) => void;
+    const store = setup(() => new Promise((r) => (resolve = r)));
+    const pending = store.refresh();
+    store.clear();
+    resolve([{ itemId: 'i1', total: 2, level: 'critical', threshold: 3 }]);
+    await pending;
+    expect(store.count()).toBe(0);
+  });
 });

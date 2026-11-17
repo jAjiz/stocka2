@@ -43,7 +43,7 @@ umbrales con el total del artículo en todas las localizaciones activas. Sus avi
 todos los usuarios: el total en rojo o naranja, el botón «Solo con aviso (N)» y un número en el
 enlace Stock que se actualiza tras cada operación. No envían push ni aparecen en Inicio.
 
-Verificado: 292 pruebas pgTAP (14 archivos), 294 pruebas Vitest (39 archivos), `pnpm build`
+Verificado: 292 pruebas pgTAP (14 archivos), 298 pruebas Vitest (39 archivos), `pnpm build`
 correcto y recorrido manual a 1280 px y 375 px (usuario sin permisos de administrador, salida
 que pasa el número a rojo sin recargar y diálogo de reglas con alcance).
 

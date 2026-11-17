@@ -190,4 +190,19 @@ describe('StockOverviewPage', () => {
     expect(onlyAlerts(el)).toBeUndefined();
     expect(el.querySelector('td.total.warning, td.total.critical')).toBeNull();
   });
+
+  it('si dejan de existir avisos con el filtro activo, la tabla vuelve a mostrarlo todo', async () => {
+    const el = await setup({
+      items: [BUJIA, ACEITE],
+      alerts: [{ itemId: 'i2', total: 0, level: 'critical', threshold: 3 }],
+    });
+    onlyAlerts(el)!.click();
+    fixture.detectChanges();
+    expect(rows(el).length).toBe(1);
+    const store = TestBed.inject(GlobalAlertsStore) as unknown as ReturnType<typeof fakeStore>;
+    store.alerts.set([]);
+    fixture.detectChanges();
+    expect(onlyAlerts(el)).toBeUndefined();
+    expect(rows(el).length).toBe(2);
+  });
 });

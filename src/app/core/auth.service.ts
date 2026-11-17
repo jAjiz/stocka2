@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { isAuthRetryableFetchError, Session } from '@supabase/supabase-js';
 import { Profile } from '../data/models';
+import { GlobalAlertsStore } from '../data/global-alerts.store';
 import { PushService } from '../data/push.service';
 import { SUPABASE } from './supabase';
 
@@ -22,6 +23,7 @@ class InactiveUserError extends Error {}
 export class AuthService {
   private readonly supabase = inject(SUPABASE);
   private readonly push = inject(PushService);
+  private readonly globalAlerts = inject(GlobalAlertsStore);
 
   readonly session = signal<Session | null>(null);
   readonly profile = signal<Profile | null>(null);
@@ -140,6 +142,7 @@ export class AuthService {
     this.profile.set(null);
     this.permittedLocationIds.set(new Set());
     this.loadError.set(false);
+    this.globalAlerts.clear();
   }
 
   /** Sesión recién abierta (login o enlace): si no se puede cargar el perfil, se cierra. */
