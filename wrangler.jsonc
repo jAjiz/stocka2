@@ -1,0 +1,16 @@
+// Worker de Cloudflare solo con static assets (spec §9). Lo publica Workers Builds en cada
+// push a main; ver docs/deployment.md.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "stocka2",
+  "compatibility_date": "2026-11-01",
+  // Sin URLs de preview: apuntarían al Supabase de producción (spec §9, sin previews).
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist/stocka2/browser",
+    // Cualquier ruta sin archivo (/acceso?t=…, /admin/articulos…) carga index.html.
+    "not_found_handling": "single-page-application",
+    // Sin redirección /index.html → /: el service worker de Angular descarga /index.html.
+    "html_handling": "none",
+  },
+}

@@ -36,7 +36,7 @@ Entra con `admin@stocka2.test` / `stocka2-dev`.
 ## Documentación
 
 - [Desarrollo](docs/development.md): comandos, pruebas y usuarios de desarrollo.
-- [Despliegue](docs/deployment.md): configuración de Supabase en producción.
+- [Despliegue](docs/deployment.md): puesta en marcha en Supabase y Cloudflare.
 - [Roadmap](ROADMAP.md): estado del proyecto y próximos pasos.
 - [Diseño](docs/specs/stocka2-design.md) y [planes de implementación](docs/plans).
 

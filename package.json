@@ -11,7 +11,8 @@
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "db:test": "node scripts/db-test.mjs",
-    "test:functions": "node scripts/smoke-admin-users.mjs && node scripts/smoke-push.mjs"
+    "test:functions": "node scripts/smoke-admin-users.mjs && node scripts/smoke-push.mjs",
+    "test:scripts": "node --test \"scripts/*.test.mjs\""
   },
   "private": true,
   "license": "MIT",
@@ -39,6 +40,7 @@
     "prettier": "^3.8.1",
     "supabase": "^3.1.0",
     "typescript": "~6.0.2",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "wrangler": "4.163.0"
   }
 }
