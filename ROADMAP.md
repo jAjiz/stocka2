@@ -63,7 +63,7 @@ tipo, importación corregida, reimportación con todo «Ya existe»).
 Worker de Cloudflare solo con static assets, publicado por Workers Builds en cada push a
 `main`. El build pasa las pruebas Vitest y `scripts/set-env.mjs` escribe la URL de Supabase y
 las claves públicas en `environment.ts` antes de compilar; si falla algo, no se publica.
-`public/_headers` evita que el navegador guarde `index.html` y el service worker en caché.
+`public/_headers` evita que el navegador guarde `index.html` y el service worker en caché, y no hay previews de otras ramas.
 La puesta en marcha está en `docs/deployment.md`.
 
 Verificado: 5 pruebas de `set-env` (`pnpm test:scripts`), 337 pruebas Vitest, `pnpm build` y

@@ -73,6 +73,10 @@ y lo publica en cada push a `main`.
 1. Crea una cuenta en Cloudflare (el plan gratuito basta).
 2. **Workers & Pages → Create → Import a repository**: autoriza GitHub y elige `jAjiz/stocka2`,
    rama `main`. El nombre del Worker tiene que ser `stocka2`, como en `wrangler.jsonc`.
+   En Settings → Build → Branch control, desactiva los builds de las demás ramas
+   («Builds for non-production branches»): usarían las variables de producción y una versión de
+   prueba podría dejar operaciones en el historial real. `wrangler.jsonc` ya desactiva las URLs
+   de preview.
 3. Comandos:
    - **Build command**: `pnpm test --watch=false && node scripts/set-env.mjs && pnpm build`
    - **Deploy command**: `npx wrangler deploy`
@@ -98,7 +102,10 @@ Si fallan las pruebas, falta alguna variable o `environment.ts` ya no tiene los 
 - **Volver a una versión anterior**: Worker → Deployments → elige la versión → Rollback.
 - **Dominio propio** (opcional): Worker → Settings → Domains & Routes → Add → Custom domain.
   El dominio tiene que estar en Cloudflare. No hay que cambiar nada en Supabase: los enlaces de
-  acceso usan el dominio desde el que se abre la app.
+  acceso usan el dominio desde el que se abre la app. En esa zona deja desactivado todo lo que
+  reescribe el HTML (Web Analytics con inyección automática, Email Obfuscation, Rocket Loader):
+  si `index.html` cambia, su hash no cuadra con `ngsw.json` y la PWA instalada deja de
+  actualizarse.
 - **Probar el build en local**: con las tres variables en el entorno,
   `node scripts/set-env.mjs && pnpm build && pnpm exec wrangler dev`, y después
   `git checkout src/environments/environment.ts` para no commitear los valores.

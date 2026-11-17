@@ -1,26 +1,18 @@
 # Cabeceras de Cloudflare static assets (spec §9). No se sirve como archivo.
-# Si varias reglas coinciden, Cloudflare junta sus cabeceras: «! Cache-Control» quita la de
-# una regla anterior.
-
-# Los .js y .css del build llevan hash en el nombre.
-/*.js
-  Cache-Control: public, max-age=31536000, immutable
-/*.css
-  Cache-Control: public, max-age=31536000, immutable
-
 # Lo que decide qué versión ve el usuario no se guarda en caché del navegador.
+#
+# Los .js y .css con hash se quedan con la caché por defecto de Cloudflare (revalida con ETag).
+# Una regla «immutable» para /*.js también se aplicaría a la respuesta de reserva (index.html)
+# cuando se pide un chunk que ya no existe, y el navegador la guardaría un año.
 /index.html
   Cache-Control: no-cache
 /ngsw.json
   Cache-Control: no-cache
 /ngsw-worker.js
-  ! Cache-Control
   Cache-Control: no-cache
 /safety-worker.js
-  ! Cache-Control
   Cache-Control: no-cache
 /worker-basic.min.js
-  ! Cache-Control
   Cache-Control: no-cache
 /manifest.webmanifest
   Cache-Control: no-cache
